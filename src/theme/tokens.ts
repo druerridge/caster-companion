@@ -45,4 +45,5 @@ export const fontSizes = {
   title: 20,
   heading: 28,
   display: 64,
+  score: 120,
 } as const;

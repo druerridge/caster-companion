@@ -1,11 +1,3 @@
-import { PlaceholderScreen } from '@/components/PlaceholderScreen';
+import { TrackerScreen } from '@/features/tracker/TrackerScreen';
 
-export default function TrackerScreen() {
-  return (
-    <PlaceholderScreen
-      title="Tracker"
-      aura="fire"
-      description="Mission points, priority, round counter and game timer."
-    />
-  );
-}
+export default TrackerScreen;

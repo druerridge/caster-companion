@@ -78,3 +78,32 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 - Moving the repo to a short path: only a few characters of margin.
 - Building APKs in CI: slower, and contradicts D5.
 - CMake 4.x: drops compatibility with old `cmake_minimum_required` values that some React Native libraries still use.
+
+## D10 — Mission Point Tracker interaction (feature 1)
+*2026-11-06*
+
+**Decision:**
+- Each player's half shows one large number. Tap the right side of a half for +1 and the left side for −1. The rotation from D7 makes "right" correct for the player across the table.
+- Scores start at 0, never go below 0, and have no upper limit. There's no win threshold for now.
+- Reset is a small, low-contrast ↺ in the bottom-right corner, behind a confirmation dialog.
+- The screen stays awake only while the Tracker tab is focused.
+- The Tracker tab has no header, to keep the table layout full-bleed. The About screen is reachable from the other tabs.
+- No per-player Aura colors (owner: unnecessary).
+
+## D11 — Local persistence via AsyncStorage
+*2026-11-06*
+
+**Decision:** Game state is saved to `@react-native-async-storage/async-storage` on every change and restored on launch, so a game survives the app being killed. `src/storage/persisted.ts` wraps it. Every read goes through a parser, so corrupt or old-format data falls back to defaults. Keys are versioned (e.g. `tracker.missionPoints.v1`).
+
+**Why:** Tiny, works in Expo Go, and the data is a few numbers.
+
+**Alternatives:** `expo-sqlite/kv-store` (synchronous reads, but pulls in SQLite).
+
+## D12 — Tracker middle band (amends D10)
+*2026-11-06*
+
+**Decision:** A band between the two player halves, outside both +/− tap areas, holds the tracker controls: `[reset] [round · timer] [priority]`. Reset moves there from the bottom-right corner and doubles in size (64 px tap target). The center slot is reserved for the round counter and timer (features 3 and 4). The right slot is reserved for a "pass priority" control (feature 2).
+
+**Why:** The owner wanted reset outside the clearly defined tap areas. Grouping all game-level controls in one band leaves both halves as pure score zones.
+
+**Alternatives:** a cut-in notch from the screen edge at the midline.

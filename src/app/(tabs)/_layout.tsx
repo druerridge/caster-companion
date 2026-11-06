@@ -34,6 +34,8 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Tracker',
+          // Full-bleed table layout; About is reachable from the other tabs.
+          headerShown: false,
           tabBarIcon: ({ color }) => <TabGlyph glyph="◆" color={color} />,
         }}
       />
