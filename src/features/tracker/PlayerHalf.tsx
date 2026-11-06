@@ -10,15 +10,33 @@ interface PlayerHalfProps {
   flipped?: boolean;
   onIncrement: () => void;
   onDecrement: () => void;
+  /** This player goes first this round. */
+  hasPriority: boolean;
+  onPassPriority: () => void;
 }
 
 const SIDE_LABEL: Record<Side, string> = { top: 'Top player', bottom: 'Bottom player' };
 
-/** One player's half of the tracker: tap the left half for −1, the right half for +1. */
-export function PlayerHalf({ side, points, flipped, onIncrement, onDecrement }: PlayerHalfProps) {
+/**
+ * One player's half of the tracker: tap the left half for −1, the right half
+ * for +1. The player with priority gets a bright frame and a tappable FIRST
+ * badge (on the edge nearest the middle band) that passes priority over.
+ */
+export function PlayerHalf({
+  side,
+  points,
+  flipped,
+  onIncrement,
+  onDecrement,
+  hasPriority,
+  onPassPriority,
+}: PlayerHalfProps) {
   const label = SIDE_LABEL[side];
   return (
-    <View style={[styles.frame, flipped && styles.flipped]} testID={`player-half-${side}`}>
+    <View
+      style={[styles.frame, flipped && styles.flipped, !hasPriority && styles.frameIdle]}
+      testID={`player-half-${side}`}
+    >
       <View style={styles.inner}>
         <View style={styles.row}>
           <Pressable
@@ -44,6 +62,20 @@ export function PlayerHalf({ side, points, flipped, onIncrement, onDecrement }: 
           </Text>
           <Text style={styles.caption}>Mission Points</Text>
         </View>
+        {hasPriority && (
+          <View style={styles.badgeSlot} pointerEvents="box-none">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${label} goes first. Pass priority`}
+              hitSlop={8}
+              onPress={onPassPriority}
+              testID={`priority-badge-${side}`}
+              style={({ pressed }) => [styles.badge, pressed && styles.badgePressed]}
+            >
+              <Text style={styles.badgeText}>FIRST ⇅</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -53,12 +85,38 @@ const styles = StyleSheet.create({
   frame: {
     flex: 1,
     borderWidth: 2,
-    borderColor: colors.frame,
+    borderColor: colors.priority,
     borderRadius: radii.lg,
     padding: spacing.xs,
     backgroundColor: colors.surface,
   },
+  frameIdle: { borderColor: colors.frameInner },
   flipped: { transform: [{ rotate: '180deg' }] },
+  badgeSlot: {
+    position: 'absolute',
+    top: spacing.md,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  badge: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.lg,
+    backgroundColor: colors.priority,
+    // Raised look so it reads as a button, not a label.
+    borderBottomWidth: 3,
+    borderBottomColor: colors.frameInner,
+    elevation: 4,
+  },
+  badgePressed: { borderBottomWidth: 1, marginTop: 2 },
+  badgeText: {
+    color: colors.onPriority,
+    fontSize: fontSizes.body,
+    fontWeight: '800',
+    letterSpacing: 2,
+  },
   inner: {
     flex: 1,
     borderWidth: 1,

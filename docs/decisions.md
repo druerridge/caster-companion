@@ -107,3 +107,15 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 **Why:** The owner wanted reset outside the clearly defined tap areas. Grouping all game-level controls in one band leaves both halves as pure score zones.
 
 **Alternatives:** a cut-in notch from the screen edge at the midline.
+
+## D13 — Priority Tracker and new-game flow (feature 2; amends D12)
+*2026-11-06*
+
+**Decision:**
+- **Start screen.** A new game opens on three sections: one per player ("I go first", with the top section rotated) and a middle "Flip a coin" button. The coin result shows for 1.5 s (winner highlighted, loser dimmed, all buttons disabled), then the game starts.
+- **Showing priority.** The player going first gets a bright gold frame and a raised, tappable `FIRST ⇅` badge on the edge of their half nearest the middle band. The other half's frame is dimmed.
+- **Passing priority.** Tap the badge to hand priority to the other player. There's no separate band button, so D12's reserved right slot is now spare.
+- **Reset is "new game".** It clears mission points and priority (and, later, round and timer), then returns to the start screen.
+- **State model.** Scores and priority now live in one `GameState` reducer (`src/domain/game.ts`), saved under `tracker.game.v1`. Scores saved by v0.2.x (`tracker.missionPoints.v1`) carry over. The UI waits for saved state to load, so it never flashes the start screen for a game in progress.
+
+**Why:** Owner's choices. The badge doubles as indicator and control, keeping the band uncluttered. One reducer gives features 3 and 4 a single place to hook "priority passed means next round".

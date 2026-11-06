@@ -7,7 +7,7 @@ describe('app navigation', () => {
   it('opens on the Tracker tab', async () => {
     await renderRouter('./src/app');
     expect(screen).toHavePathname('/');
-    expect(await screen.findByTestId('mission-points-top')).toBeTruthy();
+    expect(await screen.findByTestId('start-chooser')).toBeTruthy();
   });
 
   it.each([

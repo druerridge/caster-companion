@@ -8,6 +8,8 @@ export const colors = {
   border: '#2E3843',
   frame: '#C8A15A', // brass card-frame accent
   frameInner: '#5E4B2A',
+  priority: '#F2D27A', // bright gold: frame + badge of the player who goes first
+  onPriority: '#1A1408', // text on a priority-colored background
   text: '#ECE7DD',
   textMuted: '#A3ACB6',
   danger: '#E06A5A',

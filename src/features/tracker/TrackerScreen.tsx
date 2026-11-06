@@ -4,10 +4,12 @@ import { useCallback } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { Side } from '@/domain/missionPoints';
 import { colors, fontSizes, spacing } from '@/theme/tokens';
 
 import { PlayerHalf } from './PlayerHalf';
-import { useMissionPoints } from './useMissionPoints';
+import { StartChooser } from './StartChooser';
+import { useGame } from './useGame';
 
 const KEEP_AWAKE_TAG = 'tracker';
 
@@ -24,44 +26,51 @@ function useKeepAwakeWhileFocused() {
 }
 
 export function TrackerScreen() {
-  const { points, increment, decrement, reset } = useMissionPoints();
+  const { state, hydrated, dispatch } = useGame();
   useKeepAwakeWhileFocused();
 
   const confirmReset = () =>
-    Alert.alert('Reset game?', 'Set both mission point totals back to 0.', [
+    Alert.alert('Start a new game?', 'Clears mission points and who goes first.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Reset', style: 'destructive', onPress: reset },
+      { text: 'New game', style: 'destructive', onPress: () => dispatch({ type: 'reset' }) },
     ]);
+
+  const half = (side: Side) => (
+    <PlayerHalf
+      side={side}
+      flipped={side === 'top'}
+      points={state.points[side]}
+      onIncrement={() => dispatch({ type: 'increment', side })}
+      onDecrement={() => dispatch({ type: 'decrement', side })}
+      hasPriority={state.priority === side}
+      onPassPriority={() => dispatch({ type: 'passPriority' })}
+    />
+  );
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
-      <PlayerHalf
-        side="top"
-        flipped
-        points={points.top}
-        onIncrement={() => increment('top')}
-        onDecrement={() => decrement('top')}
-      />
-      {/* Middle band: outside both tap areas. Layout: [reset] [round · timer] [priority].
-          The center and right slots are reserved for features 2-4. */}
-      <View style={styles.band} testID="middle-band">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Reset mission points"
-          onPress={confirmReset}
-          style={({ pressed }) => [styles.bandButton, pressed && styles.bandButtonPressed]}
-        >
-          <Text style={styles.resetText}>↺</Text>
-        </Pressable>
-        <View style={styles.bandCenter} />
-        <View style={styles.bandButton} />
-      </View>
-      <PlayerHalf
-        side="bottom"
-        points={points.bottom}
-        onIncrement={() => increment('bottom')}
-        onDecrement={() => decrement('bottom')}
-      />
+      {!hydrated ? null : state.priority === null ? (
+        <StartChooser onStart={(first) => dispatch({ type: 'start', first })} />
+      ) : (
+        <>
+          {half('top')}
+          {/* Middle band, outside both tap areas: [reset] [round · timer] [spare].
+              The center slot is reserved for features 3-4. */}
+          <View style={styles.band} testID="middle-band">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Reset game"
+              onPress={confirmReset}
+              style={({ pressed }) => [styles.bandButton, pressed && styles.bandButtonPressed]}
+            >
+              <Text style={styles.resetText}>↺</Text>
+            </Pressable>
+            <View style={styles.bandCenter} />
+            <View style={styles.bandButton} />
+          </View>
+          {half('bottom')}
+        </>
+      )}
     </SafeAreaView>
   );
 }
