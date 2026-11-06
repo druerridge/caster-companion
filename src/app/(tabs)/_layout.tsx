@@ -1,0 +1,62 @@
+import { Link } from 'expo-router';
+import { Tabs } from 'expo-router/js-tabs';
+import { Pressable, StyleSheet, Text, type ColorValue } from 'react-native';
+
+import { colors, fontSizes, spacing } from '@/theme/tokens';
+
+function TabGlyph({ glyph, color }: { glyph: string; color: ColorValue }) {
+  return <Text style={[styles.glyph, { color }]}>{glyph}</Text>;
+}
+
+function AboutButton() {
+  return (
+    <Link href="/about" asChild>
+      <Pressable accessibilityLabel="About" hitSlop={12} style={styles.about}>
+        <Text style={styles.aboutText}>ⓘ</Text>
+      </Pressable>
+    </Link>
+  );
+}
+
+export default function TabsLayout() {
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: colors.frame,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.text,
+        headerRight: () => <AboutButton />,
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Tracker',
+          tabBarIcon: ({ color }) => <TabGlyph glyph="◆" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="rules"
+        options={{
+          title: 'Rules',
+          tabBarIcon: ({ color }) => <TabGlyph glyph="§" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="cryptids"
+        options={{
+          title: 'Cryptids',
+          tabBarIcon: ({ color }) => <TabGlyph glyph="✦" color={color} />,
+        }}
+      />
+    </Tabs>
+  );
+}
+
+const styles = StyleSheet.create({
+  glyph: { fontSize: fontSizes.title },
+  about: { paddingHorizontal: spacing.lg },
+  aboutText: { color: colors.textMuted, fontSize: fontSizes.title },
+});
