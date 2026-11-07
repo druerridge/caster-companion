@@ -30,6 +30,7 @@ The style should be reminsicent of the MetaZoo cards and particularly the caster
 1. Mission Point Tracker
 Counting up from 0 on each of 2 sides
 * When saving scores, load fresh instead of loading the last scores if it's been longer than half an hour.
+* When you cross 30 Mission Points, change the color of the background, but let it keep counting.
 
 2. Priority Tracker
 A way to identify which player is supposed to go first this round, and click to move it to the other side when a round ends.
