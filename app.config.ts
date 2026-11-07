@@ -30,7 +30,25 @@ const config: ExpoConfig = {
     },
     predictiveBackGestureEnabled: false,
   },
-  plugins: ['expo-router', './plugins/withReleaseSigning.ts'],
+  plugins: [
+    'expo-router',
+    // Display face embedded at build time, so it works offline (D14).
+    [
+      'expo-font',
+      {
+        android: {
+          fonts: [
+            {
+              fontFamily: 'Lilita One',
+              fontDefinitions: [{ path: './assets/fonts/LilitaOne-Regular.ttf', weight: 400 }],
+            },
+          ],
+        },
+        ios: { fonts: ['./assets/fonts/LilitaOne-Regular.ttf'] },
+      },
+    ],
+    './plugins/withReleaseSigning.ts',
+  ],
   experiments: {
     typedRoutes: true,
   },

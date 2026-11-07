@@ -2,7 +2,7 @@ import { Link } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 import { Pressable, StyleSheet, Text, type ColorValue } from 'react-native';
 
-import { colors, fontSizes, spacing } from '@/theme/tokens';
+import { colors, fonts, fontSizes, spacing } from '@/theme/tokens';
 
 function TabGlyph({ glyph, color }: { glyph: string; color: ColorValue }) {
   return <Text style={[styles.glyph, { color }]}>{glyph}</Text>;
@@ -22,11 +22,16 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.frame,
+        tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.ink,
+        },
+        tabBarLabelStyle: { fontFamily: fonts.display, fontSize: fontSizes.caption + 1 },
         headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.text,
+        headerTitleStyle: { fontFamily: fonts.display, fontSize: fontSizes.title + 2 },
         headerRight: () => <AboutButton />,
       }}
     >

@@ -1,17 +1,20 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { RoundImageButton } from '@/components/RoundImageButton';
+import { ThemedBackground } from '@/components/ThemedBackground';
 import type { Side } from '@/domain/missionPoints';
-import { colors, fontSizes, spacing } from '@/theme/tokens';
+import { spacing } from '@/theme/tokens';
 
 import { PlayerHalf } from './PlayerHalf';
 import { StartChooser } from './StartChooser';
 import { useGame } from './useGame';
 
 const KEEP_AWAKE_TAG = 'tracker';
+const RESTART_ART = require('../../../assets/images/btn-restart.png');
 
 /** Keep the screen on only while the tracker is the visible tab. */
 function useKeepAwakeWhileFocused() {
@@ -48,30 +51,30 @@ export function TrackerScreen() {
   );
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
-      {!hydrated ? null : state.priority === null ? (
-        <StartChooser onStart={(first) => dispatch({ type: 'start', first })} />
-      ) : (
-        <>
-          {half('top')}
-          {/* Middle band, outside both tap areas: [reset] [round · timer] [spare].
+    <ThemedBackground>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
+        {!hydrated ? null : state.priority === null ? (
+          <StartChooser onStart={(first) => dispatch({ type: 'start', first })} />
+        ) : (
+          <>
+            {half('top')}
+            {/* Middle band, outside both tap areas: [reset] [round · timer] [spare].
               The center slot is reserved for features 3-4. */}
-          <View style={styles.band} testID="middle-band">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Reset game"
-              onPress={confirmReset}
-              style={({ pressed }) => [styles.bandButton, pressed && styles.bandButtonPressed]}
-            >
-              <Text style={styles.resetText}>↺</Text>
-            </Pressable>
-            <View style={styles.bandCenter} />
-            <View style={styles.bandButton} />
-          </View>
-          {half('bottom')}
-        </>
-      )}
-    </SafeAreaView>
+            <View style={styles.band} testID="middle-band">
+              <RoundImageButton
+                source={RESTART_ART}
+                accessibilityLabel="Reset game"
+                onPress={confirmReset}
+                size={BAND_BUTTON_SIZE}
+              />
+              <View style={styles.bandCenter} />
+              <View style={styles.bandButton} />
+            </View>
+            {half('bottom')}
+          </>
+        )}
+      </SafeAreaView>
+    </ThemedBackground>
   );
 }
 
@@ -80,24 +83,16 @@ const BAND_BUTTON_SIZE = 64;
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
   },
   band: {
     height: BAND_BUTTON_SIZE,
+    marginVertical: spacing.xs,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   bandCenter: { flex: 1, alignItems: 'center' },
-  bandButton: {
-    width: BAND_BUTTON_SIZE,
-    height: BAND_BUTTON_SIZE,
-    borderRadius: BAND_BUTTON_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bandButtonPressed: { backgroundColor: colors.surfaceRaised },
-  resetText: { color: colors.textMuted, fontSize: fontSizes.heading * 1.5, lineHeight: 48 },
+  bandButton: { width: BAND_BUTTON_SIZE, height: BAND_BUTTON_SIZE },
 });

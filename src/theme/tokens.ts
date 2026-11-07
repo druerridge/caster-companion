@@ -1,30 +1,42 @@
-// Design tokens. Deliberately our own palette (ink/slate + brass) so the app
-// evokes a caster card frame without imitating official MetaZoo branding.
+// Design tokens: "moonlit forest" theme (D14). Cel-shaded cartoon night palette
+// that evokes the card game's art direction without using any official art,
+// logos or fonts.
 
 export const colors = {
-  background: '#101418',
-  surface: '#1A2026',
-  surfaceRaised: '#232B33',
-  border: '#2E3843',
-  frame: '#C8A15A', // brass card-frame accent
-  frameInner: '#5E4B2A',
-  priority: '#F2D27A', // bright gold: frame + badge of the player who goes first
-  onPriority: '#1A1408', // text on a priority-colored background
-  text: '#ECE7DD',
-  textMuted: '#A3ACB6',
-  danger: '#E06A5A',
+  background: '#0E1024', // night sky behind the art; also the fallback when art can't draw
+  surface: '#1C1A3D', // indigo panels (tab bar, headers, card bodies)
+  surfaceRaised: '#2A2760',
+  border: '#3A3670',
+  ink: '#0E0C18', // cartoon outline colour
+  frame: '#E8E8EE', // light card-frame border
+  frameIdle: '#6F6A9E', // frame of the player without priority
+  priority: '#D8F25A', // moon-lime: frame + badge of the player who goes first
+  onPriority: '#0E0C18',
+  accent: '#96E1FF', // moonlight blue: active tab, glyphs
+  text: '#FFFFFF',
+  textMuted: '#C2BEE6',
+  danger: '#FF7A6B',
+  // Translucent layers over the background art.
+  scrim: 'rgba(8, 8, 24, 0.45)', // inside score frames, keeps numerals legible
+  scrimStrong: 'rgba(8, 8, 24, 0.72)', // behind text-heavy panels
+  pressed: 'rgba(255, 255, 255, 0.10)',
 } as const;
 
 export type Aura = 'air' | 'dark' | 'earth' | 'fire' | 'lightning' | 'water';
 
 export const auraColors: Record<Aura, string> = {
-  air: '#A8D8E0',
-  dark: '#9A7FC8',
-  earth: '#B08D5B',
-  fire: '#E8664A',
-  lightning: '#F0CC55',
-  water: '#4C9BE8',
+  air: '#A8E0EA',
+  dark: '#B49CF0',
+  earth: '#C9A26A',
+  fire: '#FF7A5A',
+  lightning: '#F5D65A',
+  water: '#5FB2FF',
 };
+
+/** Bundled display face (Lilita One, OFL), embedded by the expo-font plugin. */
+export const fonts = {
+  display: 'Lilita One',
+} as const;
 
 export const spacing = {
   xs: 4,
@@ -39,6 +51,13 @@ export const radii = {
   sm: 6,
   md: 10,
   lg: 16,
+  xl: 24,
+} as const;
+
+/** Thick cartoon outlines, as on the card art. */
+export const strokes = {
+  keyline: 4, // dark outer line
+  frame: 4, // light inner border
 } as const;
 
 export const fontSizes = {

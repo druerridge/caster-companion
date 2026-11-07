@@ -119,3 +119,17 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 - **State model.** Scores and priority now live in one `GameState` reducer (`src/domain/game.ts`), saved under `tracker.game.v1`. Scores saved by v0.2.x (`tracker.missionPoints.v1`) carry over. The UI waits for saved state to load, so it never flashes the start screen for a game in progress.
 
 **Why:** Owner's choices. The badge doubles as indicator and control, keeping the band uncluttered. One reducer gives features 3 and 4 a single place to hook "priority passed means next round".
+
+## D14 — "Moonlit forest" visual theme (amends D6)
+*2026-11-06*
+
+**Decision:** The app takes a cel-shaded cartoon night look, guided by the 2025 card art direction (thick outlines, saturated blue-violet palettes, glowing moon), without using any official art, logos or fonts.
+- **Background:** one generated illustration, `assets/images/bg-moonlit-forest.jpg`, behind every screen (`ThemedBackground`). SDXL-Turbo, seed 22, upscaled with an img2img pass at strength 0.35. `tools/art/gen_art.py` holds the prompt and settings and regenerates it.
+- **Panels:** `CartoonFrame` gives a thick ink keyline around a light rounded border over a translucent scrim. The tracker halves, start-screen sections and `CardFrame` all use it. The priority half's border is moon-lime; the other half's is dim lavender.
+- **Type:** Lilita One (SIL OFL, `assets/fonts/`), embedded by the `expo-font` config plugin so it works offline. Scores and titles get a dark outline (`OutlinedText`, offset copies, since React Native has no text stroke). Body text stays in the system font.
+- **Buttons:** reset is a painted roundel image (`btn-restart.png`, drawn by the same script, not by SD). SD kept producing sheets of badges instead of a single button. The FIRST badge and coin button are cartoon tags: ink outline and a chunky bottom edge.
+- **Palette:** the tokens in `src/theme/tokens.ts` are now night indigo, moon-lime priority and moonlight-blue accent. Contrast tests also cover non-text UI at 3:1.
+
+**Why:** The owner found the earlier ink/brass look and a first round of ornate gothic samples didn't fit the game's style. They picked this one from six cartoon mockups.
+
+**Alternatives:** starfield, tide splash, campfire, aura swirl and swamp variants (all mocked up); SD-generated button art (unreliable).

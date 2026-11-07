@@ -3,7 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { flipCoin } from '@/domain/game';
 import type { Side } from '@/domain/missionPoints';
-import { colors, fontSizes, radii, spacing } from '@/theme/tokens';
+import { CartoonFrame } from '@/components/CartoonFrame';
+import { OutlinedText } from '@/components/OutlinedText';
+import { colors, fonts, fontSizes, radii, spacing, strokes } from '@/theme/tokens';
 
 import { COIN_REVEAL_MS } from './timing';
 
@@ -41,16 +43,25 @@ export function StartChooser({ onStart }: StartChooserProps) {
         disabled={coinResult !== null}
         onPress={() => onStart(side)}
         testID={`start-${side}`}
-        style={({ pressed }) => [
-          styles.section,
-          side === 'top' && styles.flipped,
-          pressed && styles.sectionPressed,
-          won && styles.sectionWon,
-          lost && styles.sectionLost,
-        ]}
+        style={[styles.section, side === 'top' && styles.flipped, lost && styles.sectionLost]}
       >
-        <Text style={styles.title}>{won ? 'You go first!' : 'I go first'}</Text>
-        {coinResult === null && <Text style={styles.caption}>Tap to start the game</Text>}
+        {({ pressed }) => (
+          <CartoonFrame
+            borderColor={won ? colors.priority : colors.frame}
+            fill={pressed ? colors.scrimStrong : colors.scrim}
+            style={styles.section}
+            innerStyle={styles.sectionInner}
+          >
+            <OutlinedText style={[styles.title, won && styles.titleWon]} outline={4}>
+              {won ? 'You go first!' : 'I go first'}
+            </OutlinedText>
+            {coinResult === null && (
+              <OutlinedText style={styles.caption} outline={2}>
+                Tap to start the game
+              </OutlinedText>
+            )}
+          </CartoonFrame>
+        )}
       </Pressable>
     );
   };
@@ -64,7 +75,7 @@ export function StartChooser({ onStart }: StartChooserProps) {
           accessibilityLabel="Flip a coin"
           disabled={coinResult !== null}
           onPress={flip}
-          style={({ pressed }) => [styles.coin, pressed && styles.sectionPressed]}
+          style={({ pressed }) => [styles.coin, pressed && styles.coinPressed]}
         >
           <Text style={styles.coinText}>
             {coinResult === null ? 'Flip a coin' : `${SIDE_LABEL[coinResult]} wins the flip`}
@@ -78,31 +89,31 @@ export function StartChooser({ onStart }: StartChooserProps) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, gap: spacing.sm },
-  section: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.frame,
-    borderRadius: radii.lg,
-    backgroundColor: colors.surface,
-    gap: spacing.sm,
-  },
+  section: { flex: 1 },
+  sectionInner: { alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   flipped: { transform: [{ rotate: '180deg' }] },
-  sectionPressed: { backgroundColor: colors.surfaceRaised },
-  sectionWon: { borderColor: colors.priority, borderWidth: 4 },
   sectionLost: { opacity: 0.4 },
-  title: { color: colors.text, fontSize: fontSizes.heading, fontWeight: '700' },
-  caption: { color: colors.textMuted, fontSize: fontSizes.caption, letterSpacing: 1 },
+  title: { color: colors.text, fontFamily: fonts.display, fontSize: fontSizes.display * 0.75 },
+  titleWon: { color: colors.priority },
+  caption: {
+    color: colors.text,
+    fontFamily: fonts.display,
+    fontSize: fontSizes.body,
+    letterSpacing: 1,
+  },
   coinBand: { height: 64, alignItems: 'center', justifyContent: 'center' },
+  // Cartoon pill: indigo fill, ink outline, chunky bottom edge.
   coin: {
     minHeight: 48,
     paddingHorizontal: spacing.xl,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.frame,
+    borderRadius: radii.xl,
+    borderWidth: strokes.keyline - 1,
+    borderBottomWidth: strokes.keyline + 3,
+    borderColor: colors.ink,
+    backgroundColor: colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  coinText: { color: colors.text, fontSize: fontSizes.body, fontWeight: '600' },
+  coinPressed: { borderBottomWidth: strokes.keyline - 1, marginTop: 4 },
+  coinText: { color: colors.text, fontFamily: fonts.display, fontSize: fontSizes.title },
 });
