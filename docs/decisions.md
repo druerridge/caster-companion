@@ -133,3 +133,12 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 **Why:** The owner found the earlier ink/brass look and a first round of ornate gothic samples didn't fit the game's style. They picked this one from six cartoon mockups.
 
 **Alternatives:** starfield, tide splash, campfire, aura swirl and swamp variants (all mocked up); SD-generated button art (unreliable).
+
+## D15 — Themed dialogs replace native alerts
+*2026-11-07*
+
+**Decision:** Confirmations use an in-style dialog instead of the native `Alert`. `DialogProvider` (mounted once in the root layout) hosts a single `ThemedDialog`: a card-framed panel over a dimmed screen. Screens call `const { confirm } = useDialog(); if (await confirm({ title, message, confirmLabel, destructive })) …`. Tapping outside the panel or pressing the Android back button cancels. A destructive confirm gets a coral warning button; otherwise it's moon-lime. Its buttons use `TagButton`, the shared cartoon-tag button that the coin flip and FIRST badge now use too.
+
+**Why:** The owner found the native popup looked out of place. One provider means every future prompt gets the style for free, and a promise-based `confirm` keeps call sites as short as `Alert.alert`.
+
+**Alternatives:** a per-screen `<ConfirmDialog visible …/>` component (more state wiring at each call site); a router modal screen (overkill for yes/no prompts).

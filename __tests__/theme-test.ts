@@ -9,6 +9,7 @@ describe('palette readability (WCAG AA)', () => {
     ['muted text on background', colors.textMuted, colors.background],
     ['muted text on surface', colors.textMuted, colors.surface],
     ['badge text on priority', colors.onPriority, colors.priority],
+    ['warning button text on danger', colors.onDanger, colors.danger],
   ])('%s is at least 4.5:1', (_label, fg, bg) => {
     expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(4.5);
   });

@@ -1,9 +1,10 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useDialog } from '@/components/dialog/DialogProvider';
 import { RoundImageButton } from '@/components/RoundImageButton';
 import { ThemedBackground } from '@/components/ThemedBackground';
 import type { Side } from '@/domain/missionPoints';
@@ -32,11 +33,17 @@ export function TrackerScreen() {
   const { state, hydrated, dispatch } = useGame();
   useKeepAwakeWhileFocused();
 
-  const confirmReset = () =>
-    Alert.alert('Start a new game?', 'Clears mission points and who goes first.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'New game', style: 'destructive', onPress: () => dispatch({ type: 'reset' }) },
-    ]);
+  const { confirm } = useDialog();
+
+  const confirmReset = async () => {
+    const ok = await confirm({
+      title: 'Start a new game?',
+      message: 'Clears mission points and who goes first.',
+      confirmLabel: 'New game',
+      destructive: true,
+    });
+    if (ok) dispatch({ type: 'reset' });
+  };
 
   const half = (side: Side) => (
     <PlayerHalf
@@ -64,7 +71,7 @@ export function TrackerScreen() {
               <RoundImageButton
                 source={RESTART_ART}
                 accessibilityLabel="Reset game"
-                onPress={confirmReset}
+                onPress={() => void confirmReset()}
                 size={BAND_BUTTON_SIZE}
               />
               <View style={styles.bandCenter} />

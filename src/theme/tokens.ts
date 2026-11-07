@@ -16,10 +16,12 @@ export const colors = {
   text: '#FFFFFF',
   textMuted: '#C2BEE6',
   danger: '#FF7A6B',
+  onDanger: '#0E0C18',
   // Translucent layers over the background art.
   scrim: 'rgba(8, 8, 24, 0.45)', // inside score frames, keeps numerals legible
   scrimStrong: 'rgba(8, 8, 24, 0.72)', // behind text-heavy panels
   pressed: 'rgba(255, 255, 255, 0.10)',
+  backdrop: 'rgba(6, 6, 18, 0.78)', // behind dialogs
 } as const;
 
 export type Aura = 'air' | 'dark' | 'earth' | 'fire' | 'lightning' | 'water';

@@ -11,6 +11,8 @@ interface CartoonFrameProps {
   fill?: string;
   style?: StyleProp<ViewStyle>;
   innerStyle?: StyleProp<ViewStyle>;
+  /** Size to the content instead of filling the parent (e.g. dialogs). */
+  fitContent?: boolean;
   testID?: string;
 }
 
@@ -24,11 +26,19 @@ export function CartoonFrame({
   fill = colors.scrim,
   style,
   innerStyle,
+  fitContent,
   testID,
 }: CartoonFrameProps) {
   return (
     <View style={[styles.keyline, style]} testID={testID}>
-      <View style={[styles.inner, { borderColor, backgroundColor: fill }, innerStyle]}>
+      <View
+        style={[
+          styles.inner,
+          !fitContent && styles.fill,
+          { borderColor, backgroundColor: fill },
+          innerStyle,
+        ]}
+      >
         {children}
       </View>
     </View>
@@ -41,8 +51,8 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
     borderRadius: radii.xl,
   },
+  fill: { flex: 1 },
   inner: {
-    flex: 1,
     borderWidth: strokes.frame,
     borderRadius: radii.xl - strokes.keyline,
     overflow: 'hidden',

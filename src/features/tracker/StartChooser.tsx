@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { flipCoin } from '@/domain/game';
 import type { Side } from '@/domain/missionPoints';
 import { CartoonFrame } from '@/components/CartoonFrame';
 import { OutlinedText } from '@/components/OutlinedText';
-import { colors, fonts, fontSizes, radii, spacing, strokes } from '@/theme/tokens';
+import { TagButton } from '@/components/TagButton';
+import { colors, fonts, fontSizes, spacing } from '@/theme/tokens';
 
 import { COIN_REVEAL_MS } from './timing';
 
@@ -70,17 +71,12 @@ export function StartChooser({ onStart }: StartChooserProps) {
     <View style={styles.screen} testID="start-chooser">
       {section('top')}
       <View style={styles.coinBand}>
-        <Pressable
-          accessibilityRole="button"
+        <TagButton
+          label={coinResult === null ? 'Flip a coin' : `${SIDE_LABEL[coinResult]} wins the flip`}
           accessibilityLabel="Flip a coin"
           disabled={coinResult !== null}
           onPress={flip}
-          style={({ pressed }) => [styles.coin, pressed && styles.coinPressed]}
-        >
-          <Text style={styles.coinText}>
-            {coinResult === null ? 'Flip a coin' : `${SIDE_LABEL[coinResult]} wins the flip`}
-          </Text>
-        </Pressable>
+        />
       </View>
       {section('bottom')}
     </View>
@@ -102,18 +98,4 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   coinBand: { height: 64, alignItems: 'center', justifyContent: 'center' },
-  // Cartoon pill: indigo fill, ink outline, chunky bottom edge.
-  coin: {
-    minHeight: 48,
-    paddingHorizontal: spacing.xl,
-    borderRadius: radii.xl,
-    borderWidth: strokes.keyline - 1,
-    borderBottomWidth: strokes.keyline + 3,
-    borderColor: colors.ink,
-    backgroundColor: colors.surfaceRaised,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  coinPressed: { borderBottomWidth: strokes.keyline - 1, marginTop: 4 },
-  coinText: { color: colors.text, fontFamily: fonts.display, fontSize: fontSizes.title },
 });

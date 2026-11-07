@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
-import { Alert } from 'react-native';
 
 import { GAME_KEY, LEGACY_MISSION_POINTS_KEY } from '@/features/tracker/useGame';
 
@@ -129,23 +128,40 @@ describe('priority', () => {
 
 describe('reset', () => {
   it('only resets after confirmation, then returns to the start chooser', async () => {
-    const alert = jest.spyOn(Alert, 'alert');
     await startedGame('top');
     await press('Top player: increase mission points');
 
     await press('Reset game');
-    const cancel = alert.mock.calls[0]?.[2]?.find((b) => b.style === 'cancel');
-    await act(async () => cancel?.onPress?.());
+    expect(screen.getByText('Start a new game?')).toBeTruthy();
+    await press('Cancel');
+    expect(screen.queryByText('Start a new game?')).toBeNull();
     expect(score('top')).toHaveTextContent('1');
     expect(screen.getByTestId('priority-badge-top')).toBeTruthy();
 
     await press('Reset game');
-    const confirm = alert.mock.calls[1]?.[2]?.find((b) => b.style === 'destructive');
-    await act(async () => confirm?.onPress?.());
+    await press('New game');
     expect(screen.getByTestId('start-chooser')).toBeTruthy();
 
     await fireEvent.press(screen.getByTestId('start-bottom'));
     expect(score('top')).toHaveTextContent('0');
+  });
+
+  it('cancels the reset when tapping outside the dialog', async () => {
+    await startedGame('top');
+    await press('Top player: increase mission points');
+    await press('Reset game');
+    await fireEvent.press(screen.getByTestId('dialog-backdrop'));
+    expect(screen.queryByText('Start a new game?')).toBeNull();
+    expect(score('top')).toHaveTextContent('1');
+  });
+
+  it('cancels the reset on the Android back button', async () => {
+    await startedGame('top');
+    await press('Top player: increase mission points');
+    await press('Reset game');
+    await fireEvent(screen.getByTestId('dialog'), 'requestClose');
+    expect(screen.queryByText('Start a new game?')).toBeNull();
+    expect(score('top')).toHaveTextContent('1');
   });
 
   it('keeps the reset button in the middle band, outside both player halves', async () => {

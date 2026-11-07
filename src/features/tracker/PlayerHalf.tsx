@@ -1,9 +1,10 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { CartoonFrame } from '@/components/CartoonFrame';
 import { OutlinedText } from '@/components/OutlinedText';
+import { TagButton } from '@/components/TagButton';
 import type { Side } from '@/domain/missionPoints';
-import { colors, fonts, fontSizes, radii, spacing, strokes } from '@/theme/tokens';
+import { colors, fonts, fontSizes, spacing } from '@/theme/tokens';
 
 interface PlayerHalfProps {
   side: Side;
@@ -68,16 +69,14 @@ export function PlayerHalf({
       </View>
       {hasPriority && (
         <View style={styles.badgeSlot} pointerEvents="box-none">
-          <Pressable
-            accessibilityRole="button"
+          <TagButton
+            label="FIRST ⇅"
+            variant="primary"
             accessibilityLabel={`${label} goes first. Pass priority`}
             hitSlop={8}
             onPress={onPassPriority}
             testID={`priority-badge-${side}`}
-            style={({ pressed }) => [styles.badge, pressed && styles.badgePressed]}
-          >
-            <Text style={styles.badgeText}>FIRST ⇅</Text>
-          </Pressable>
+          />
         </View>
       )}
     </CartoonFrame>
@@ -93,23 +92,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-  },
-  // Cartoon tag: lime fill, ink outline, chunky bottom edge so it reads as a button.
-  badge: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.md,
-    backgroundColor: colors.priority,
-    borderWidth: strokes.keyline - 1,
-    borderBottomWidth: strokes.keyline + 3,
-    borderColor: colors.ink,
-  },
-  badgePressed: { borderBottomWidth: strokes.keyline - 1, marginTop: 4 },
-  badgeText: {
-    color: colors.onPriority,
-    fontFamily: fonts.display,
-    fontSize: fontSizes.title,
-    letterSpacing: 2,
   },
   row: { flex: 1, flexDirection: 'row' },
   zone: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.xl },
