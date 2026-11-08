@@ -79,13 +79,15 @@ export function SideDrawer({ open, onOpenChange, buttonSize, children }: SideDra
         importantForAccessibility={open ? 'auto' : 'no-hide-descendants'}
         testID="side-drawer"
       >
-        <CartoonFrame fill={colors.scrimStrong}>
+        {/* CartoonFrame only fills its parent when told to; without flex: 1 it
+            collapses to its borders (v0.5.0 showed just a white line). */}
+        <CartoonFrame fill={colors.scrimStrong} style={styles.fill} testID="side-drawer-frame">
           <View
             style={styles.fill}
             onLayout={(e) => setContent(e.nativeEvent.layout)}
             testID="side-drawer-content"
           >
-            {content && (
+            {content && content.width > 0 && content.height > 0 && (
               // Swap width and height, then rotate, so the content runs along the drawer.
               <View
                 testID="side-drawer-rotated"

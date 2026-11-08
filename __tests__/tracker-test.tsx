@@ -269,6 +269,13 @@ describe('round counter drawer', () => {
     expect(round(3)).toBeTruthy();
   });
 
+  it('stretches the drawer panel to the full drawer height', async () => {
+    // Regression: without flex: 1 the frame collapsed to its borders on device.
+    await startedGame();
+    await press('Open menu');
+    expect(screen.getByTestId('side-drawer-frame')).toHaveStyle({ flex: 1 });
+  });
+
   it('rotates the round to run along the drawer', async () => {
     await startedGame();
     await openMenu();
