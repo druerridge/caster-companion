@@ -31,3 +31,9 @@ export function parseMissionPoints(value: unknown): MissionPoints | null {
 export const MISSION_POINT_GOAL = 30;
 
 export const hasReachedGoal = (points: number): boolean => points >= MISSION_POINT_GOAL;
+
+/** Signed change label, e.g. "+3" or "−2" (true minus sign); empty for no change. */
+export function formatChange(delta: number): string {
+  if (delta === 0) return '';
+  return delta > 0 ? `+${delta}` : `−${-delta}`;
+}

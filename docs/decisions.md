@@ -154,3 +154,12 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 **Why:** Owner's design-doc sub-items for feature 1.
 
 **Alternatives:** storing a timestamp inside the game record (needs a v2 key and migration); highlighting only the number at 30 (less visible across the table).
+
+## D17 — Change indicator for quick taps (feature 1 sub-item)
+*2026-11-07*
+
+**Decision:** During a burst of taps, a small outlined number beside each player's score shows the net change for that burst, e.g. `+3`, or `−2` with a true minus sign. Plus is moonlight blue; minus is coral. A burst ends 1.5 s after the last tap that changed the score (`CHANGE_BURST_MS`), and then the number disappears. The change is measured from the score before the burst, so taps that do nothing (−1 at 0) don't count. A burst that nets to zero shows nothing. The number hangs off the score's right edge, so the score stays centred. It sits on the rotated half, so it reads correctly for the top player too. It appears and disappears without animation. Logic: `useRecentChange` (timer) plus `formatChange` (pure, `src/domain/missionPoints.ts`).
+
+**Why:** Owner's design-doc sub-item (like the Magic Companion app). A net value answers "how much did I just add?" even after a correction tap.
+
+**Alternatives:** counting taps instead of the net change (wrong after a correction); a fade-out animation (can add if wanted).

@@ -8,7 +8,7 @@ import { GAME_KEY, LAST_ACTIVE_KEY, LEGACY_MISSION_POINTS_KEY } from '@/features
 import { colors } from '@/theme/tokens';
 
 // Keep the coin reveal short so tests stay fast with real timers.
-jest.mock('@/features/tracker/timing', () => ({ COIN_REVEAL_MS: 20 }));
+jest.mock('@/features/tracker/timing', () => ({ COIN_REVEAL_MS: 20, CHANGE_BURST_MS: 1500 }));
 
 jest.mock('expo-keep-awake', () => ({
   activateKeepAwakeAsync: jest.fn(() => Promise.resolve()),
@@ -110,6 +110,53 @@ describe('mission points', () => {
     expect(screen.getByTestId('player-half-bottom')).not.toHaveStyle({
       transform: [{ rotate: '180deg' }],
     });
+  });
+});
+
+describe('change indicator', () => {
+  const change = (side: Side) => screen.queryByTestId(`mission-points-change-${side}`);
+  const wait = (ms: number) => act(() => jest.advanceTimersByTime(ms));
+
+  it('shows the net change of a quick burst of taps, then hides', async () => {
+    await startedGame();
+    expect(change('bottom')).toBeNull();
+
+    await press('Bottom player: increase mission points');
+    expect(change('bottom')).toHaveTextContent('+1');
+    await wait(1000);
+    await press('Bottom player: increase mission points');
+    await press('Bottom player: increase mission points');
+    expect(change('bottom')).toHaveTextContent('+3');
+    await press('Bottom player: decrease mission points');
+    expect(change('bottom')).toHaveTextContent('+2');
+    expect(change('top')).toBeNull();
+
+    await wait(1000); // still within the window of the last tap
+    expect(change('bottom')).toHaveTextContent('+2');
+    await wait(600);
+    expect(change('bottom')).toBeNull();
+    expect(score('bottom')).toHaveTextContent('2');
+
+    // A new burst starts counting from the current score.
+    await press('Bottom player: decrease mission points');
+    expect(change('bottom')).toHaveTextContent('−1');
+  });
+
+  it('hides when the burst nets to zero', async () => {
+    await startedGame();
+    await press('Top player: increase mission points');
+    await press('Top player: decrease mission points');
+    expect(change('top')).toBeNull();
+  });
+
+  it('ignores taps that do not change the score', async () => {
+    await startedGame();
+    await press('Top player: decrease mission points');
+    expect(change('top')).toBeNull();
+    await press('Top player: increase mission points');
+    await press('Top player: decrease mission points');
+    await press('Top player: decrease mission points');
+    expect(change('top')).toBeNull();
   });
 });
 

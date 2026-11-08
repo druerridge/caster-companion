@@ -3,8 +3,10 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { CartoonFrame } from '@/components/CartoonFrame';
 import { OutlinedText } from '@/components/OutlinedText';
 import { TagButton } from '@/components/TagButton';
-import { hasReachedGoal, type Side } from '@/domain/missionPoints';
+import { formatChange, hasReachedGoal, type Side } from '@/domain/missionPoints';
 import { colors, fonts, fontSizes, spacing } from '@/theme/tokens';
+
+import { useRecentChange } from './useRecentChange';
 
 interface PlayerHalfProps {
   side: Side;
@@ -24,7 +26,8 @@ const SIDE_LABEL: Record<Side, string> = { top: 'Top player', bottom: 'Bottom pl
  * One player's half of the tracker: tap the left half for −1, the right half
  * for +1. The player with priority gets a bright frame and a tappable FIRST
  * badge (on the edge nearest the middle band) that passes priority over.
- * At 30+ mission points the half's background changes colour.
+ * At 30+ mission points the half's background changes colour. A small
+ * "+3" / "−2" beside the score shows the net change during a burst of taps.
  */
 export function PlayerHalf({
   side,
@@ -36,6 +39,7 @@ export function PlayerHalf({
   onPassPriority,
 }: PlayerHalfProps) {
   const label = SIDE_LABEL[side];
+  const change = useRecentChange(points);
   return (
     <CartoonFrame
       borderColor={hasPriority ? colors.priority : colors.frameIdle}
@@ -62,9 +66,23 @@ export function PlayerHalf({
         </Pressable>
       </View>
       <View style={styles.center} pointerEvents="none">
-        <OutlinedText style={styles.score} outline={6} testID={`mission-points-${side}`}>
-          {points}
-        </OutlinedText>
+        <View>
+          <OutlinedText style={styles.score} outline={6} testID={`mission-points-${side}`}>
+            {points}
+          </OutlinedText>
+          {change !== 0 && (
+            // Hangs off the score's right edge so the score itself stays centred.
+            <View style={styles.changeSlot}>
+              <OutlinedText
+                style={[styles.change, change < 0 && styles.changeDown]}
+                outline={3}
+                testID={`mission-points-change-${side}`}
+              >
+                {formatChange(change)}
+              </OutlinedText>
+            </View>
+          )}
+        </View>
         <OutlinedText style={styles.caption} outline={2}>
           Mission Points
         </OutlinedText>
@@ -112,6 +130,19 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.score,
     fontVariant: ['tabular-nums'],
   },
+  changeSlot: {
+    position: 'absolute',
+    left: '100%',
+    top: spacing.lg,
+    marginLeft: spacing.sm,
+  },
+  change: {
+    color: colors.accent,
+    fontFamily: fonts.display,
+    fontSize: fontSizes.heading * 1.3,
+    fontVariant: ['tabular-nums'],
+  },
+  changeDown: { color: colors.danger },
   caption: {
     color: colors.text,
     fontFamily: fonts.display,

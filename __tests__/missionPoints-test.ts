@@ -2,6 +2,7 @@ import {
   INITIAL_MISSION_POINTS,
   MISSION_POINT_GOAL,
   decrement,
+  formatChange,
   hasReachedGoal,
   increment,
   parseMissionPoints,
@@ -50,4 +51,12 @@ describe('hasReachedGoal', () => {
     expect(hasReachedGoal(30)).toBe(true);
     expect(hasReachedGoal(45)).toBe(true);
   });
+});
+
+describe('formatChange', () => {
+  it.each([
+    [3, '+3'],
+    [-2, '−2'],
+    [0, ''],
+  ])('formats %p as %p', (delta, label) => expect(formatChange(delta)).toBe(label));
 });
