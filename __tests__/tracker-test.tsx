@@ -282,7 +282,7 @@ describe('round counter drawer', () => {
     expect(screen.getByTestId('side-drawer-rotated')).toHaveStyle({
       width: 600,
       height: 100,
-      transform: [{ rotate: '-90deg' }],
+      transform: [{ rotate: '90deg' }],
     });
   });
 

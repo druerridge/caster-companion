@@ -132,7 +132,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
-    transform: [{ rotate: '-90deg' }],
+    // Clockwise: the text's bottom faces into the screen, so a reader at the
+    // right edge (where a right-handed player reaches) has the table "below" it.
+    transform: [{ rotate: '90deg' }],
   },
   handle: { position: 'absolute', right: 0, top: '50%' },
 });
