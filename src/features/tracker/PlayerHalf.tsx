@@ -66,13 +66,15 @@ export function PlayerHalf({
         </Pressable>
       </View>
       <View style={styles.center} pointerEvents="none">
-        <View>
+        {/* Equal fixed-width slots either side keep the score centred; the right
+            one holds the burst change. Plain flow layout, nothing positioned. */}
+        <View style={styles.scoreRow}>
+          <View style={styles.changeSlot} />
           <OutlinedText style={styles.score} outline={6} testID={`mission-points-${side}`}>
             {points}
           </OutlinedText>
-          {change !== 0 && (
-            // Hangs off the score's right edge so the score itself stays centred.
-            <View style={styles.changeSlot}>
+          <View style={styles.changeSlot}>
+            {change !== 0 && (
               <OutlinedText
                 style={[styles.change, change < 0 && styles.changeDown]}
                 outline={3}
@@ -80,8 +82,8 @@ export function PlayerHalf({
               >
                 {formatChange(change)}
               </OutlinedText>
-            </View>
-          )}
+            )}
+          </View>
         </View>
         <OutlinedText style={styles.caption} outline={2}>
           Mission Points
@@ -102,6 +104,9 @@ export function PlayerHalf({
     </CartoonFrame>
   );
 }
+
+/** Fits "+99" at the change font size. */
+const CHANGE_SLOT_WIDTH = 84;
 
 const styles = StyleSheet.create({
   frame: { flex: 1 },
@@ -130,11 +135,12 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.score,
     fontVariant: ['tabular-nums'],
   },
+  scoreRow: { flexDirection: 'row', alignItems: 'flex-start' },
   changeSlot: {
-    position: 'absolute',
-    left: '100%',
-    top: spacing.lg,
-    marginLeft: spacing.sm,
+    width: CHANGE_SLOT_WIDTH,
+    paddingTop: spacing.lg,
+    paddingLeft: spacing.sm,
+    alignItems: 'flex-start',
   },
   change: {
     color: colors.accent,
