@@ -1,6 +1,8 @@
 import {
   INITIAL_MISSION_POINTS,
+  MISSION_POINT_GOAL,
   decrement,
+  hasReachedGoal,
   increment,
   parseMissionPoints,
 } from '@/domain/missionPoints';
@@ -38,5 +40,14 @@ describe('mission points', () => {
     [{ top: 1 }, null],
   ])('parses stored value %j as %j', (input, expected) => {
     expect(parseMissionPoints(input)).toEqual(expected);
+  });
+});
+
+describe('hasReachedGoal', () => {
+  it('is reached at 30 and stays reached above it', () => {
+    expect(MISSION_POINT_GOAL).toBe(30);
+    expect(hasReachedGoal(29)).toBe(false);
+    expect(hasReachedGoal(30)).toBe(true);
+    expect(hasReachedGoal(45)).toBe(true);
   });
 });

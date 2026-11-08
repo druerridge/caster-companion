@@ -1,8 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
+import { AppState, type AppStateStatus } from 'react-native';
 
-import { GAME_KEY, LEGACY_MISSION_POINTS_KEY } from '@/features/tracker/useGame';
+import { STALE_AFTER_MS } from '@/domain/session';
+import { GAME_KEY, LAST_ACTIVE_KEY, LEGACY_MISSION_POINTS_KEY } from '@/features/tracker/useGame';
+import { colors } from '@/theme/tokens';
 
 // Keep the coin reveal short so tests stay fast with real timers.
 jest.mock('@/features/tracker/timing', () => ({ COIN_REVEAL_MS: 20 }));
@@ -28,6 +31,8 @@ const startedGame = async (first: Side = 'bottom') => {
   await renderTracker(first);
   await screen.findByTestId('middle-band');
 };
+
+const GAME_STATE = (game: object) => AsyncStorage.setItem(GAME_KEY.key, JSON.stringify(game));
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -105,6 +110,29 @@ describe('mission points', () => {
     expect(screen.getByTestId('player-half-bottom')).not.toHaveStyle({
       transform: [{ rotate: '180deg' }],
     });
+  });
+});
+
+describe('reaching 30 mission points', () => {
+  const fill = (side: Side) => screen.getByTestId(`player-half-${side}-fill`);
+
+  it("changes that player's background at 30 and keeps counting", async () => {
+    await GAME_STATE({ points: { top: 0, bottom: 29 }, priority: 'top' });
+    await renderTracker();
+    await screen.findByTestId('middle-band');
+    expect(fill('bottom')).toHaveStyle({ backgroundColor: colors.scrim });
+
+    await press('Bottom player: increase mission points');
+    expect(fill('bottom')).toHaveStyle({ backgroundColor: colors.goalFill });
+    expect(fill('top')).toHaveStyle({ backgroundColor: colors.scrim });
+
+    await press('Bottom player: increase mission points');
+    expect(score('bottom')).toHaveTextContent('31');
+    expect(fill('bottom')).toHaveStyle({ backgroundColor: colors.goalFill });
+
+    await press('Bottom player: decrease mission points');
+    await press('Bottom player: decrease mission points');
+    expect(fill('bottom')).toHaveStyle({ backgroundColor: colors.scrim });
   });
 });
 
@@ -201,6 +229,61 @@ describe('persistence', () => {
     await startedGame('top');
     expect(score('top')).toHaveTextContent('4');
     expect(score('bottom')).toHaveTextContent('6');
+  });
+});
+
+describe('stale games', () => {
+  const SAVED = { points: { top: 3, bottom: 5 }, priority: 'top' } as const;
+
+  it('restores a game closed for under 15 minutes', async () => {
+    await GAME_STATE(SAVED);
+    await AsyncStorage.setItem(
+      LAST_ACTIVE_KEY.key,
+      JSON.stringify(Date.now() - STALE_AFTER_MS + 60_000),
+    );
+    await renderTracker();
+    await screen.findByTestId('middle-band');
+    expect(score('bottom')).toHaveTextContent('5');
+  });
+
+  it('starts fresh after the app was closed for over 15 minutes, and stays fresh', async () => {
+    await GAME_STATE(SAVED);
+    await AsyncStorage.setItem(
+      LAST_ACTIVE_KEY.key,
+      JSON.stringify(Date.now() - STALE_AFTER_MS - 1),
+    );
+    await renderTracker();
+    expect(await screen.findByTestId('start-chooser')).toBeTruthy();
+
+    // A quick reopen must not bring the old game back.
+    await act(async () => screen.unmount());
+    await renderTracker();
+    expect(await screen.findByTestId('start-chooser')).toBeTruthy();
+  });
+
+  it('applies the same rule when returning from the background', async () => {
+    // renderRouter installs fake timers, so the clock is driven with setSystemTime.
+    const advance = (ms: number) => jest.setSystemTime(Date.now() + ms);
+    // The React Native jest preset mocks AppState; replay its registered listeners.
+    const emit = (status: AppStateStatus) =>
+      act(() => {
+        for (const [, listener] of jest.mocked(AppState.addEventListener).mock.calls) {
+          listener(status);
+        }
+      });
+    await GAME_STATE(SAVED);
+    await renderTracker();
+    await screen.findByTestId('middle-band');
+
+    await emit('background');
+    advance(STALE_AFTER_MS);
+    await emit('active');
+    expect(score('bottom')).toHaveTextContent('5');
+
+    await emit('background');
+    advance(STALE_AFTER_MS + 1);
+    await emit('active');
+    expect(await screen.findByTestId('start-chooser')).toBeTruthy();
   });
 });
 

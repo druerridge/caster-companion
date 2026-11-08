@@ -19,6 +19,7 @@ export const colors = {
   onDanger: '#0E0C18',
   // Translucent layers over the background art.
   scrim: 'rgba(8, 8, 24, 0.45)', // inside score frames, keeps numerals legible
+  goalFill: 'rgba(196, 58, 150, 0.62)', // score frame once a player reaches 30 mission points
   scrimStrong: 'rgba(8, 8, 24, 0.72)', // behind text-heavy panels
   pressed: 'rgba(255, 255, 255, 0.10)',
   backdrop: 'rgba(6, 6, 18, 0.78)', // behind dialogs

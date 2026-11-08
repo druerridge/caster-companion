@@ -32,6 +32,7 @@ export function CartoonFrame({
   return (
     <View style={[styles.keyline, style]} testID={testID}>
       <View
+        testID={testID && `${testID}-fill`}
         style={[
           styles.inner,
           !fitContent && styles.fill,

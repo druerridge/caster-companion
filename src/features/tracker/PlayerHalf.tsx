@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { CartoonFrame } from '@/components/CartoonFrame';
 import { OutlinedText } from '@/components/OutlinedText';
 import { TagButton } from '@/components/TagButton';
-import type { Side } from '@/domain/missionPoints';
+import { hasReachedGoal, type Side } from '@/domain/missionPoints';
 import { colors, fonts, fontSizes, spacing } from '@/theme/tokens';
 
 interface PlayerHalfProps {
@@ -24,6 +24,7 @@ const SIDE_LABEL: Record<Side, string> = { top: 'Top player', bottom: 'Bottom pl
  * One player's half of the tracker: tap the left half for −1, the right half
  * for +1. The player with priority gets a bright frame and a tappable FIRST
  * badge (on the edge nearest the middle band) that passes priority over.
+ * At 30+ mission points the half's background changes colour.
  */
 export function PlayerHalf({
   side,
@@ -38,6 +39,7 @@ export function PlayerHalf({
   return (
     <CartoonFrame
       borderColor={hasPriority ? colors.priority : colors.frameIdle}
+      fill={hasReachedGoal(points) ? colors.goalFill : colors.scrim}
       style={[styles.frame, flipped && styles.flipped]}
       testID={`player-half-${side}`}
     >

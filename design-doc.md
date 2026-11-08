@@ -29,8 +29,9 @@ The style should be reminsicent of the MetaZoo cards and particularly the caster
 
 1. Mission Point Tracker
 Counting up from 0 on each of 2 sides
-* When saving scores, load fresh instead of loading the last scores if it's been longer than half an hour.
+* When saving scores, load fresh instead of loading the last scores if it's been longer than 15 minutes since the app was closed.
 * When you cross 30 Mission Points, change the color of the background, but let it keep counting.
+* Mission Point Tracker should be in the center of the 3 tabs, and it should always be the default selected when opening the app.
 
 2. Priority Tracker
 A way to identify which player is supposed to go first this round, and click to move it to the other side when a round ends.

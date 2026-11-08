@@ -10,6 +10,16 @@ describe('app navigation', () => {
     expect(await screen.findByTestId('start-chooser')).toBeTruthy();
   });
 
+  it('puts the Tracker tab in the middle', async () => {
+    await renderRouter('./src/app');
+    await screen.findByTestId('start-chooser');
+    const tabs = screen
+      .getAllByRole('button')
+      .map((b) => /Rules|Tracker|Cryptids/.exec(String(b.props.accessibilityLabel))?.[0])
+      .filter(Boolean);
+    expect(tabs).toEqual(['Rules', 'Tracker', 'Cryptids']);
+  });
+
   it.each([
     ['Rules', '/rules', 'Offline rulebook, errata and quick reference.'],
     ['Cryptids', '/cryptids', 'Search cryptids by name or location.'],

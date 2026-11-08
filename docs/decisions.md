@@ -142,3 +142,15 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 **Why:** The owner found the native popup looked out of place. One provider means every future prompt gets the style for free, and a promise-based `confirm` keeps call sites as short as `Alert.alert`.
 
 **Alternatives:** a per-screen `<ConfirmDialog visible …/>` component (more state wiring at each call site); a router modal screen (overkill for yes/no prompts).
+
+## D16 — Mission Point Tracker follow-ups (feature 1 sub-items; amends D10, D11)
+*2026-11-07*
+
+**Decision:**
+- **Stale games start fresh.** If the app has been closed for more than 15 minutes, it opens on a new game (the start screen) instead of the saved one. "Closed" covers both a killed app (checked at launch against `tracker.lastActiveAt.v1`) and a backgrounded app (checked when it returns to the foreground). The timestamp is refreshed on launch, on every action, and on background/foreground changes. The fresh game is saved right away, so a quick reopen can't bring the old one back. Exactly 15:00 still restores; no saved timestamp (first run, or upgrading from v0.4.1) also restores. The rule lives in `src/domain/session.ts`.
+- **30 mission points.** When a player reaches 30 (≥ 30), their half's background changes from the dark scrim to a translucent magenta (`colors.goalFill`), and it keeps counting with no cap. Dropping back below 30 restores the scrim. Magenta stays distinct from the moon-lime priority frame and the coral danger colour.
+- **Tab order.** The tabs are now Rules · Tracker · Cryptids. The app always opens on Tracker, because it is the `/` route. Expo Router doesn't accept `initialRouteName` on the navigator, and doesn't need it here. Returning from the background keeps whichever tab was open.
+
+**Why:** Owner's design-doc sub-items for feature 1.
+
+**Alternatives:** storing a timestamp inside the game record (needs a v2 key and migration); highlighting only the number at 30 (less visible across the table).

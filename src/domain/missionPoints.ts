@@ -26,3 +26,8 @@ export function parseMissionPoints(value: unknown): MissionPoints | null {
   if (!valid(record.top) || !valid(record.bottom)) return null;
   return { top: record.top, bottom: record.bottom };
 }
+
+/** Reaching this many mission points changes the player's background; counting continues. */
+export const MISSION_POINT_GOAL = 30;
+
+export const hasReachedGoal = (points: number): boolean => points >= MISSION_POINT_GOAL;

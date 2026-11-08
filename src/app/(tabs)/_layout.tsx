@@ -20,6 +20,7 @@ function AboutButton() {
 
 export default function TabsLayout() {
   return (
+    // Tracker sits in the middle; the app always opens on it because "/" is its route.
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.accent,
@@ -36,19 +37,19 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
+        name="rules"
+        options={{
+          title: 'Rules',
+          tabBarIcon: ({ color }) => <TabGlyph glyph="§" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="index"
         options={{
           title: 'Tracker',
           // Full-bleed table layout; About is reachable from the other tabs.
           headerShown: false,
           tabBarIcon: ({ color }) => <TabGlyph glyph="◆" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="rules"
-        options={{
-          title: 'Rules',
-          tabBarIcon: ({ color }) => <TabGlyph glyph="§" color={color} />,
         }}
       />
       <Tabs.Screen
