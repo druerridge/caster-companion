@@ -13,9 +13,11 @@ export interface GameState {
   readonly points: MissionPoints;
   /** Who goes first this round; null until the players pick (or flip for) a starter. */
   readonly priority: Side | null;
+  /** Current round, from 1; each priority pass starts the next round. */
+  readonly round: number;
 }
 
-export const NEW_GAME: GameState = { points: INITIAL_MISSION_POINTS, priority: null };
+export const NEW_GAME: GameState = { points: INITIAL_MISSION_POINTS, priority: null, round: 1 };
 
 export type GameAction =
   | { type: 'increment'; side: Side }
@@ -39,9 +41,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return points === state.points ? state : { ...state, points };
     }
     case 'start':
-      return { ...state, priority: action.first };
+      return { ...state, priority: action.first, round: 1 };
     case 'passPriority':
-      return state.priority === null ? state : { ...state, priority: otherSide(state.priority) };
+      return state.priority === null
+        ? state
+        : { ...state, priority: otherSide(state.priority), round: state.round + 1 };
     case 'reset':
       return NEW_GAME;
   }
@@ -54,5 +58,8 @@ export function parseGameState(value: unknown): GameState | null {
   const points = parseMissionPoints(record.points);
   const priority = record.priority;
   if (!points || !(priority === null || priority === 'top' || priority === 'bottom')) return null;
-  return { points, priority };
+  // Games saved before the round counter (v0.4.x) have no round; resume at 1.
+  const round = record.round === undefined ? 1 : record.round;
+  if (!Number.isSafeInteger(round) || (round as number) < 1) return null;
+  return { points, priority, round: round as number };
 }

@@ -38,10 +38,10 @@ Counting up from 0 on each of 2 sides
 A way to identify which player is supposed to go first this round, and click to move it to the other side when a round ends.
 
 3. *Round Counter
-A small, subtle number tracking how many rounds have gone by to keep an eye on game length, based on when priority was passed
+A small, subtle number tracking how many rounds have gone by to keep an eye on game length, based on when priority was passed. Keep it off screen and fly it out in the middle once a menu button, opposite the reset button, has been clicked.
 
 4. *Round Timer
-A small, subtle timer (e.g. 05:41) to track how much time has elapsed since the game started
+A small, subtle timer (e.g. 05:41) to track how much time has elapsed since the game started. Keep it off screen and fly it out in the middle once a menu button, opposite the reset button, has been clicked.
 
 ### Rules Screen
 

@@ -101,9 +101,9 @@ def glyph(im, kind, color=MOONLIGHT):
             d.polygon([(x + (24 + g) * s, y - 6 * s), (x - (16 + g) * s, y - (22 + g) * s),
                        (x - 2 * s, y + (26 + g) * s)], fill=col)
         elif kind == "menu":
-            for dy in (-28, 0, 28):
-                d.rounded_rectangle([c - (44 + grow / 2) * s, c + (dy - 8 - grow / 2) * s,
-                                     c + (44 + grow / 2) * s, c + (dy + 8 + grow / 2) * s],
+            for dy in (-34, 0, 34):
+                d.rounded_rectangle([c - (44 + grow / 2) * s, c + (dy - 7 - grow / 2) * s,
+                                     c + (44 + grow / 2) * s, c + (dy + 7 + grow / 2) * s],
                                     radius=8 * s, fill=col)
 
     draw(INK, 10)  # thick cartoon outline
@@ -116,7 +116,7 @@ def glyph(im, kind, color=MOONLIGHT):
 def buttons():
     OUT.mkdir(parents=True, exist_ok=True)
     # 256 px = 4x a 64 dp button, enough for xxxhdpi.
-    for kind in ("restart",):
+    for kind in ("restart", "menu"):
         path = OUT / f"btn-{kind}.png"
         glyph(roundel(256), kind).save(path, optimize=True)
         print("wrote", path)

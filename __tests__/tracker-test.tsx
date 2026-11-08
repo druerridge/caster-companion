@@ -225,6 +225,74 @@ describe('priority', () => {
   });
 });
 
+describe('round counter drawer', () => {
+  const round = (n: number) => screen.queryByLabelText(`Round ${n}`);
+  /** Open the drawer and simulate its first layout (Jest doesn't lay out). */
+  const openMenu = async () => {
+    await press('Open menu');
+    await fireEvent(screen.getByTestId('side-drawer-content'), 'layout', {
+      nativeEvent: { layout: { x: 0, y: 0, width: 100, height: 600 } },
+    });
+  };
+
+  it('keeps the round hidden until the menu is opened', async () => {
+    await startedGame();
+    expect(round(1)).toBeNull();
+    await openMenu();
+    expect(round(1)).toBeTruthy();
+    expect(screen.getByTestId('round-number')).toHaveTextContent('1');
+  });
+
+  it('closes from the menu button', async () => {
+    await startedGame();
+    await press('Open menu');
+    await press('Close menu');
+    expect(round(1)).toBeNull();
+    expect(screen.getByLabelText('Open menu')).toBeTruthy();
+  });
+
+  it('closes on a tap outside, without scoring', async () => {
+    await startedGame();
+    await press('Open menu');
+    await fireEvent.press(screen.getByTestId('drawer-backdrop'));
+    expect(round(1)).toBeNull();
+    expect(screen.queryByTestId('drawer-backdrop')).toBeNull();
+    expect(score('top')).toHaveTextContent('0');
+    expect(score('bottom')).toHaveTextContent('0');
+  });
+
+  it('counts a round each time priority is passed', async () => {
+    await startedGame('bottom');
+    await press('Bottom player goes first. Pass priority');
+    await press('Top player goes first. Pass priority');
+    await openMenu();
+    expect(round(3)).toBeTruthy();
+  });
+
+  it('rotates the round to run along the drawer', async () => {
+    await startedGame();
+    await openMenu();
+    expect(screen.getByTestId('side-drawer-rotated')).toHaveStyle({
+      width: 600,
+      height: 100,
+      transform: [{ rotate: '-90deg' }],
+    });
+  });
+
+  it('starts back at round 1, drawer closed, after a new game', async () => {
+    await startedGame('bottom');
+    await press('Bottom player goes first. Pass priority');
+    await openMenu();
+    await press('Dismiss menu');
+    await press('Reset game');
+    await press('New game');
+    await fireEvent.press(screen.getByTestId('start-top'));
+    expect(round(1)).toBeNull();
+    await openMenu();
+    expect(round(1)).toBeTruthy();
+  });
+});
+
 describe('reset', () => {
   it('only resets after confirmation, then returns to the start chooser', async () => {
     await startedGame('top');
@@ -284,6 +352,7 @@ describe('persistence', () => {
     expect(JSON.parse(stored ?? 'null')).toEqual({
       points: { top: 1, bottom: 0 },
       priority: 'bottom',
+      round: 2,
     });
 
     await act(async () => screen.unmount());

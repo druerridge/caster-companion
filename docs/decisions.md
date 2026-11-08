@@ -172,3 +172,16 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 **Why:** Owner wanted players to see when the burst is about to expire. A short hold keeps the number readable right after a tap.
 
 **Alternatives:** fading over the whole window (dims immediately, harder to read); a shrinking progress ring (busier).
+
+## D19 — Round counter in a side drawer (feature 3; amends D12, D13)
+*2026-11-07*
+
+**Decision:**
+- **Counting.** `GameState` gains `round`. A game starts at round 1, and each priority pass (the FIRST badge) starts the next round. New game resets to 1. There's no correction for mistaken passes (owner: count normally for now). It's saved in the same `tracker.game.v1` record; games saved by v0.4.x load at round 1.
+- **Menu button.** A painted menu roundel (`btn-menu.png`, from `tools/art/gen_art.py buttons`) sits at the right end of the middle band, opposite reset, taking D12's spare slot.
+- **Drawer.** Tapping it rolls a full-height drawer in from the right edge (30% of screen width, at least 112 dp; 220 ms ease-out, native driver), styled as a `CartoonFrame` over the strong scrim. The roundel rides on the drawer's left edge as a handle and toggles it. While it's open, a tap anywhere outside only closes it, so it can't change a score or pass priority. It starts closed in every new game.
+- **Orientation.** One copy of "ROUND 3", rotated 90° (counter-clockwise) to run along the drawer, perpendicular to the scores, so both players read it from the side. The timer (feature 4) will sit beside it.
+
+**Why:** Owner's design. Keeps the table uncluttered, and one perpendicular copy is fair to both players without duplicating.
+
+**Alternatives:** a copy facing each player (owner preferred one perpendicular copy); − / + correction buttons (deferred).

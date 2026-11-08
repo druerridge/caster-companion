@@ -1,16 +1,19 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useDialog } from '@/components/dialog/DialogProvider';
 import { RoundImageButton } from '@/components/RoundImageButton';
 import { ThemedBackground } from '@/components/ThemedBackground';
+import type { GameAction, GameState } from '@/domain/game';
 import type { Side } from '@/domain/missionPoints';
 import { spacing } from '@/theme/tokens';
 
 import { PlayerHalf } from './PlayerHalf';
+import { RoundDisplay } from './RoundDisplay';
+import { SideDrawer } from './SideDrawer';
 import { StartChooser } from './StartChooser';
 import { useGame } from './useGame';
 
@@ -45,6 +48,29 @@ export function TrackerScreen() {
     if (ok) dispatch({ type: 'reset' });
   };
 
+  return (
+    <ThemedBackground>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
+        {!hydrated ? null : state.priority === null ? (
+          <StartChooser onStart={(first) => dispatch({ type: 'start', first })} />
+        ) : (
+          <GameTable state={state} dispatch={dispatch} onReset={() => void confirmReset()} />
+        )}
+      </SafeAreaView>
+    </ThemedBackground>
+  );
+}
+
+interface GameTableProps {
+  state: GameState;
+  dispatch: (action: GameAction) => void;
+  onReset: () => void;
+}
+
+/** A game in progress. Mounted per game, so the menu drawer starts closed each time. */
+function GameTable({ state, dispatch, onReset }: GameTableProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const half = (side: Side) => (
     <PlayerHalf
       side={side}
@@ -58,30 +84,25 @@ export function TrackerScreen() {
   );
 
   return (
-    <ThemedBackground>
-      <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
-        {!hydrated ? null : state.priority === null ? (
-          <StartChooser onStart={(first) => dispatch({ type: 'start', first })} />
-        ) : (
-          <>
-            {half('top')}
-            {/* Middle band, outside both tap areas: [reset] [round · timer] [spare].
-              The center slot is reserved for features 3-4. */}
-            <View style={styles.band} testID="middle-band">
-              <RoundImageButton
-                source={RESTART_ART}
-                accessibilityLabel="Reset game"
-                onPress={() => void confirmReset()}
-                size={BAND_BUTTON_SIZE}
-              />
-              <View style={styles.bandCenter} />
-              <View style={styles.bandButton} />
-            </View>
-            {half('bottom')}
-          </>
-        )}
-      </SafeAreaView>
-    </ThemedBackground>
+    <View style={styles.table}>
+      {half('top')}
+      {/* Middle band, outside both tap areas: [reset] ... [menu]. The menu roundel
+          belongs to the drawer overlay; this slot just keeps its place. */}
+      <View style={styles.band} testID="middle-band">
+        <RoundImageButton
+          source={RESTART_ART}
+          accessibilityLabel="Reset game"
+          onPress={onReset}
+          size={BAND_BUTTON_SIZE}
+        />
+        <View style={styles.bandButton} />
+      </View>
+      {half('bottom')}
+      {/* The halves are equal, so this overlay's vertical centre is the band. */}
+      <SideDrawer open={menuOpen} onOpenChange={setMenuOpen} buttonSize={BAND_BUTTON_SIZE}>
+        <RoundDisplay round={state.round} />
+      </SideDrawer>
+    </View>
   );
 }
 
@@ -93,6 +114,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
   },
+  table: { flex: 1 },
   band: {
     height: BAND_BUTTON_SIZE,
     marginVertical: spacing.xs,
@@ -100,6 +122,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  bandCenter: { flex: 1, alignItems: 'center' },
   bandButton: { width: BAND_BUTTON_SIZE, height: BAND_BUTTON_SIZE },
 });
