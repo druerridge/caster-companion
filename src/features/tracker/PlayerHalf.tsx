@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
 import { CartoonFrame } from '@/components/CartoonFrame';
 import { OutlinedText } from '@/components/OutlinedText';
@@ -27,7 +27,8 @@ const SIDE_LABEL: Record<Side, string> = { top: 'Top player', bottom: 'Bottom pl
  * for +1. The player with priority gets a bright frame and a tappable FIRST
  * badge (on the edge nearest the middle band) that passes priority over.
  * At 30+ mission points the half's background changes colour. A small
- * "+3" / "−2" beside the score shows the net change during a burst of taps.
+ * "+3" / "−2" beside the score shows the net change during a burst of taps,
+ * fading out as the burst runs out.
  */
 export function PlayerHalf({
   side,
@@ -39,7 +40,7 @@ export function PlayerHalf({
   onPassPriority,
 }: PlayerHalfProps) {
   const label = SIDE_LABEL[side];
-  const change = useRecentChange(points);
+  const { delta: change, opacity: changeOpacity } = useRecentChange(points);
   return (
     <CartoonFrame
       borderColor={hasPriority ? colors.priority : colors.frameIdle}
@@ -75,13 +76,18 @@ export function PlayerHalf({
           </OutlinedText>
           <View style={styles.changeSlot}>
             {change !== 0 && (
-              <OutlinedText
-                style={[styles.change, change < 0 && styles.changeDown]}
-                outline={3}
-                testID={`mission-points-change-${side}`}
+              <Animated.View
+                style={{ opacity: changeOpacity }}
+                testID={`mission-points-change-fade-${side}`}
               >
-                {formatChange(change)}
-              </OutlinedText>
+                <OutlinedText
+                  style={[styles.change, change < 0 && styles.changeDown]}
+                  outline={3}
+                  testID={`mission-points-change-${side}`}
+                >
+                  {formatChange(change)}
+                </OutlinedText>
+              </Animated.View>
             )}
           </View>
         </View>

@@ -163,3 +163,12 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 **Why:** Owner's design-doc sub-item (like the Magic Companion app). A net value answers "how much did I just add?" even after a correction tap.
 
 **Alternatives:** counting taps instead of the net change (wrong after a correction); a fade-out animation (can add if wanted).
+
+## D18 — Change indicator fades out (amends D17)
+*2026-11-07*
+
+**Decision:** After each change, the burst indicator stays fully visible for 0.5 s (`CHANGE_HOLD_MS`), then fades linearly to transparent over 1 s (`CHANGE_FADE_MS`). The fade reaches zero exactly when the 1.5 s burst ends (`CHANGE_BURST_MS` is defined as their sum). Each new change snaps it back to full strength and restarts the timing. It uses core `Animated` with the native driver, so no new dependency.
+
+**Why:** Owner wanted players to see when the burst is about to expire. A short hold keeps the number readable right after a tap.
+
+**Alternatives:** fading over the whole window (dims immediately, harder to read); a shrinking progress ring (busier).

@@ -1,14 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
-import { AppState, type AppStateStatus } from 'react-native';
+import { Animated, AppState, type AppStateStatus } from 'react-native';
 
 import { STALE_AFTER_MS } from '@/domain/session';
+import { CHANGE_BURST_MS, CHANGE_FADE_MS, CHANGE_HOLD_MS } from '@/features/tracker/timing';
 import { GAME_KEY, LAST_ACTIVE_KEY, LEGACY_MISSION_POINTS_KEY } from '@/features/tracker/useGame';
 import { colors } from '@/theme/tokens';
 
 // Keep the coin reveal short so tests stay fast with real timers.
-jest.mock('@/features/tracker/timing', () => ({ COIN_REVEAL_MS: 20, CHANGE_BURST_MS: 1500 }));
+jest.mock('@/features/tracker/timing', () => ({
+  ...jest.requireActual('@/features/tracker/timing'),
+  COIN_REVEAL_MS: 20,
+}));
 
 jest.mock('expo-keep-awake', () => ({
   activateKeepAwakeAsync: jest.fn(() => Promise.resolve()),
@@ -140,6 +144,26 @@ describe('change indicator', () => {
     // A new burst starts counting from the current score.
     await press('Bottom player: decrease mission points');
     expect(change('bottom')).toHaveTextContent('−1');
+  });
+
+  it('holds fully visible, then fades out exactly as the burst ends', async () => {
+    // The native-driven fade doesn't advance under Jest, so check its schedule.
+    const delay = jest.spyOn(Animated, 'delay');
+    const timing = jest.spyOn(Animated, 'timing');
+    try {
+      await startedGame();
+      await press('Bottom player: increase mission points');
+      expect(screen.getByTestId('mission-points-change-fade-bottom')).toHaveStyle({ opacity: 1 });
+      expect(delay).toHaveBeenLastCalledWith(CHANGE_HOLD_MS);
+      expect(timing).toHaveBeenLastCalledWith(
+        expect.any(Animated.Value),
+        expect.objectContaining({ toValue: 0, duration: CHANGE_FADE_MS }),
+      );
+      expect(CHANGE_HOLD_MS + CHANGE_FADE_MS).toBe(CHANGE_BURST_MS);
+    } finally {
+      delay.mockRestore();
+      timing.mockRestore();
+    }
   });
 
   it('hides when the burst nets to zero', async () => {
