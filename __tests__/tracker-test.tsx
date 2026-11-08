@@ -286,6 +286,42 @@ describe('round counter drawer', () => {
     });
   });
 
+  it('shows the time elapsed since the game started, ticking while open', async () => {
+    await startedGame();
+    await openMenu();
+    expect(screen.getByTestId('game-clock')).toHaveTextContent('00:00');
+    await act(() => jest.advanceTimersByTime(65_000));
+    expect(screen.getByTestId('game-clock')).toHaveTextContent('01:05');
+  });
+
+  it('keeps counting real time while the drawer is closed', async () => {
+    await startedGame();
+    await act(() => jest.advanceTimersByTime(5 * 60_000));
+    await openMenu();
+    expect(screen.getByLabelText('Game time 05:00')).toBeTruthy();
+  });
+
+  it('restores the clock from the saved start time', async () => {
+    await GAME_STATE({
+      points: { top: 0, bottom: 0 },
+      priority: 'top',
+      round: 2,
+      startedAt: Date.now() - (12 * 60_000 + 3_000),
+    });
+    await renderTracker();
+    await screen.findByTestId('middle-band');
+    await openMenu();
+    expect(screen.getByTestId('game-clock')).toHaveTextContent('12:03');
+  });
+
+  it('shows an unknown time for games saved before the timer', async () => {
+    await GAME_STATE({ points: { top: 0, bottom: 0 }, priority: 'top', round: 2 });
+    await renderTracker();
+    await screen.findByTestId('middle-band');
+    await openMenu();
+    expect(screen.getByTestId('game-clock')).toHaveTextContent('--:--');
+  });
+
   it('starts back at round 1, drawer closed, after a new game', async () => {
     await startedGame('bottom');
     await press('Bottom player goes first. Pass priority');
@@ -360,6 +396,7 @@ describe('persistence', () => {
       points: { top: 1, bottom: 0 },
       priority: 'bottom',
       round: 2,
+      startedAt: expect.any(Number),
     });
 
     await act(async () => screen.unmount());

@@ -8,6 +8,7 @@ import {
   type MissionPoints,
   type Side,
 } from './missionPoints';
+import { parseTimestamp } from './session';
 
 export interface GameState {
   readonly points: MissionPoints;
@@ -15,14 +16,22 @@ export interface GameState {
   readonly priority: Side | null;
   /** Current round, from 1; each priority pass starts the next round. */
   readonly round: number;
+  /** When the game started (epoch ms); null before it starts, or if saved before the timer. */
+  readonly startedAt: number | null;
 }
 
-export const NEW_GAME: GameState = { points: INITIAL_MISSION_POINTS, priority: null, round: 1 };
+export const NEW_GAME: GameState = {
+  points: INITIAL_MISSION_POINTS,
+  priority: null,
+  round: 1,
+  startedAt: null,
+};
 
 export type GameAction =
   | { type: 'increment'; side: Side }
   | { type: 'decrement'; side: Side }
-  | { type: 'start'; first: Side }
+  /** `at` is the start time (epoch ms), passed in to keep the reducer pure. */
+  | { type: 'start'; first: Side; at: number }
   | { type: 'passPriority' }
   | { type: 'reset' };
 
@@ -41,7 +50,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return points === state.points ? state : { ...state, points };
     }
     case 'start':
-      return { ...state, priority: action.first, round: 1 };
+      return { ...state, priority: action.first, round: 1, startedAt: action.at };
     case 'passPriority':
       return state.priority === null
         ? state
@@ -61,5 +70,21 @@ export function parseGameState(value: unknown): GameState | null {
   // Games saved before the round counter (v0.4.x) have no round; resume at 1.
   const round = record.round === undefined ? 1 : record.round;
   if (!Number.isSafeInteger(round) || (round as number) < 1) return null;
-  return { points, priority, round: round as number };
+  // Games saved before the timer (v0.5.x) have no start time; the clock shows as unknown.
+  const startedAt = record.startedAt === undefined ? null : record.startedAt;
+  if (startedAt !== null && parseTimestamp(startedAt) === null) return null;
+  return { points, priority, round: round as number, startedAt: startedAt as number | null };
+}
+
+/**
+ * Elapsed game time as "05:41", or "1:05:41" past an hour. Negative spans
+ * (a clock set backwards) show as 00:00.
+ */
+export function formatElapsed(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }

@@ -11,6 +11,7 @@ import type { GameAction, GameState } from '@/domain/game';
 import type { Side } from '@/domain/missionPoints';
 import { spacing } from '@/theme/tokens';
 
+import { GameClock } from './GameClock';
 import { PlayerHalf } from './PlayerHalf';
 import { RoundDisplay } from './RoundDisplay';
 import { SideDrawer } from './SideDrawer';
@@ -52,7 +53,7 @@ export function TrackerScreen() {
     <ThemedBackground>
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
         {!hydrated ? null : state.priority === null ? (
-          <StartChooser onStart={(first) => dispatch({ type: 'start', first })} />
+          <StartChooser onStart={(first) => dispatch({ type: 'start', first, at: Date.now() })} />
         ) : (
           <GameTable state={state} dispatch={dispatch} onReset={() => void confirmReset()} />
         )}
@@ -100,7 +101,10 @@ function GameTable({ state, dispatch, onReset }: GameTableProps) {
       {half('bottom')}
       {/* The halves are equal, so this overlay's vertical centre is the band. */}
       <SideDrawer open={menuOpen} onOpenChange={setMenuOpen} buttonSize={BAND_BUTTON_SIZE}>
-        <RoundDisplay round={state.round} />
+        <View style={styles.drawerRow}>
+          <RoundDisplay round={state.round} />
+          <GameClock startedAt={state.startedAt} running={menuOpen} />
+        </View>
       </SideDrawer>
     </View>
   );
@@ -123,4 +127,5 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   bandButton: { width: BAND_BUTTON_SIZE, height: BAND_BUTTON_SIZE },
+  drawerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxl },
 });

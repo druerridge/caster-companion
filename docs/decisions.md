@@ -185,3 +185,16 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 **Why:** Owner's design. Keeps the table uncluttered, and one perpendicular copy is fair to both players without duplicating.
 
 **Alternatives:** a copy facing each player (owner preferred one perpendicular copy); − / + correction buttons (deferred).
+
+## D20 — Round timer (feature 4; amends D19)
+*2026-11-07*
+
+**Decision:**
+- **What it measures.** Wall-clock time since the game started (the moment a starter is picked or the coin result is applied), shown as `05:41`, or `1:05:41` past an hour. `GameState.startedAt` (epoch ms) is set by the `start` action, which carries the time so the reducer stays pure. It's saved with the game and cleared on new game. Because it's wall-clock time, it keeps counting while the app is in the background or killed. The 15-minute stale rule (D16) still starts a fresh game after a long break. There's no pause.
+- **Where.** In the side drawer, beside "ROUND n" in the same rotated row, slightly smaller and muted so the round stays the headline.
+- **Ticking.** `useSyncExternalStore` reads the elapsed whole seconds fresh on every render, so the clock is right the moment the drawer opens. It polls every 250 ms only while the drawer is open. React re-renders only when the second changes.
+- **Old saves.** Games saved before v0.6.0 have no start time and show `--:--` until the next new game.
+
+**Why:** Owner's spec: a small, subtle elapsed timer revealed with the round counter.
+
+**Alternatives:** a monotonic in-app timer (stops when the app is killed); ticking while the drawer is closed (wasted renders).
