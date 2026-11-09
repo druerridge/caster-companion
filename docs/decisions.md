@@ -202,8 +202,17 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 ## D21 â€” "How to Play" button on the Rules screen (feature 5)
 *2026-11-08*
 
-**Decision:** The Rules screen's first item is a primary "HOW TO PLAY" tag button that opens the official How to Play YouTube playlist with `Linking.openURL` (expo-linking). Android hands it to the YouTube app if installed, else the browser. If no app can open the link, a one-button themed alert (new `useDialog().alert()`) says so. A caption under it says it needs internet; it's the one explicitly online item on the screen. The rest of the screen stays a placeholder for the offline rulebook (feature 6). The design doc was renumbered: How to Play is now feature 5, Quick Rulebook 6, LLM Rules Lookup 7, Cryptid Search 8.
+**Decision:** The Rules screen's first item is a primary "HOW TO PLAY" tag button that opens the official How to Play YouTube playlist with `Linking.openURL` (expo-linking). Android hands it to the YouTube app if installed, else the browser. If no app can open the link, a one-button themed alert (new `useDialog().alert()`) says so. There's no "needs internet" note (owner, v0.7.1: obvious enough). The rest of the screen stays a placeholder for the offline rulebook (feature 6). The design doc was renumbered: How to Play is now feature 5, Quick Rulebook 6, LLM Rules Lookup 7, Cryptid Search 8.
 
 **Why:** Owner's spec. Handing off to YouTube keeps the APK small and avoids embedding a player or a WebView.
 
 **Alternatives:** an in-app embedded player (needs a WebView dependency, worse playback than the YouTube app); an in-app browser tab via expo-web-browser (extra dependency, and wouldn't hand off to the YouTube app).
+
+## D22 — Rulebook link on the Rules screen (feature 6, first part)
+*2026-11-08*
+
+**Decision:** A primary "RULEBOOK" tag button under How to Play opens the full base set rules PDF (`metazoo-full-base-set-rules.pdf` on the publisher's r2.dev media host, ~20 MB) in whatever Android picks for PDFs, normally the browser. Same failure alert as D21. If that URL ever dies, the fallback is the HTML version at metazootcg.com/how-to-play/rules/full. It needs internet; offline caching, errata and search stay open for the rest of feature 6.
+
+**Why:** Owner asked for a link to the rulebook. The PDF is the canonical document; linking keeps the APK small and always current.
+
+**Alternatives:** the HTML rules page (fallback); bundling or caching the PDF for offline use (deferred; 20 MB).

@@ -21,7 +21,7 @@ describe('app navigation', () => {
   });
 
   it.each([
-    ['Rules', '/rules', 'Offline rulebook, errata and quick reference.'],
+    ['Rules', '/rules', 'Errata and offline quick reference.'],
     ['Cryptids', '/cryptids', 'Search cryptids by name or location.'],
   ])('switches to the %s tab', async (tab, path, text) => {
     await renderRouter('./src/app');

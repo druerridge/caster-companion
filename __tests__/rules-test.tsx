@@ -15,13 +15,21 @@ describe('Rules screen', () => {
     );
   });
 
+  it('opens the full rulebook PDF', async () => {
+    await renderRouter('./src/app', { initialUrl: '/rules' });
+    await fireEvent.press(await screen.findByTestId('rulebook'));
+    expect(Linking.openURL).toHaveBeenCalledWith(
+      'https://pub-a3dc1f83df6d45f0a279ae0036773e78.r2.dev/media/legacy/downloads/metazoo-full-base-set-rules.pdf',
+    );
+  });
+
   it('shows an error if the link cannot be opened', async () => {
     jest.mocked(Linking.openURL).mockRejectedValueOnce(new Error('no handler'));
     await renderRouter('./src/app', { initialUrl: '/rules' });
     await fireEvent.press(await screen.findByTestId('how-to-play'));
-    expect(await screen.findByText("Couldn't open video")).toBeTruthy();
+    expect(await screen.findByText("Couldn't open link")).toBeTruthy();
     expect(screen.queryByLabelText('Cancel')).toBeNull();
     await fireEvent.press(screen.getByLabelText('OK'));
-    expect(screen.queryByText("Couldn't open video")).toBeNull();
+    expect(screen.queryByText("Couldn't open link")).toBeNull();
   });
 });
