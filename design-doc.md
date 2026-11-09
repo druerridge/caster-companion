@@ -45,13 +45,15 @@ A small, subtle timer (e.g. 05:41) to track how much time has elapsed since the 
 
 ### Rules Screen
 
-5. **Rules Lookup - If it's possible, hit a free/open LLM to ask ruling questions.  I've had tremendous luck just typing in questions like "In MetaZoo 2025, when I do X with Y, what happens?" or "In MetaZoo 2025, what does give +2 influence mean? vs gain +2 influence?"
+5. *Quick "How to Play" - Button to access the how-to-play youtube series put out by MetaTwo / GameQBator Labs.
 
 6. *Quick Rulebook - if it's not possible to do the LLM-based one, at least having quick, offline (cached?) access to the rulebook (available via PDF), errata page, and other key info to search would be perfect.
 
+7. **Rules Lookup - If it's possible, hit a free/open LLM to ask ruling questions.  I've had tremendous luck just typing in questions like "In MetaZoo 2025, when I do X with Y, what happens?" or "In MetaZoo 2025, what does give +2 influence mean? vs gain +2 influence?"
+
 ### Cryptid Search
 
-7. **A screen where you can search by cryptid name or location and turn up cryptids using the same data that is visualized on the metazootcg.com website
+8. **A screen where you can search by cryptid name or location and turn up cryptids using the same data that is visualized on the metazootcg.com website
 
 * Single Stretch Goal
 ** Double Stretch Goal
