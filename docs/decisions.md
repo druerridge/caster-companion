@@ -211,8 +211,8 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 ## D22 — Rulebook link on the Rules screen (feature 6, first part)
 *2026-11-08*
 
-**Decision:** A primary "RULEBOOK" tag button under How to Play opens the full base set rules PDF (`metazoo-full-base-set-rules.pdf` on the publisher's r2.dev media host, ~20 MB) in whatever Android picks for PDFs, normally the browser. Same failure alert as D21. If that URL ever dies, the fallback is the HTML version at metazootcg.com/how-to-play/rules/full. It needs internet; offline caching, errata and search stay open for the rest of feature 6.
+**Decision:** A primary "RULEBOOK" tag button under How to Play opens the full rules web page, metazootcg.com/how-to-play/rules/full, in the browser. Same failure alert as D21. v0.8.0 linked the base set rules PDF (`metazoo-full-base-set-rules.pdf` on the publisher's r2.dev host, ~20 MB), but on the owner's phone it only downloaded instead of opening (v0.8.1 switched). It needs internet; offline caching, errata and search stay open for the rest of feature 6.
 
 **Why:** Owner asked for a link to the rulebook. The PDF is the canonical document; linking keeps the APK small and always current.
 
-**Alternatives:** the HTML rules page (fallback); bundling or caching the PDF for offline use (deferred; 20 MB).
+**Alternatives:** the PDF link (only downloads on Android); bundling or caching the PDF for offline use (deferred; 20 MB).

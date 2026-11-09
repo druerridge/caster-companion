@@ -11,9 +11,8 @@ import { colors, fontSizes, spacing } from '@/theme/tokens';
 const HOW_TO_PLAY_URL =
   'https://www.youtube.com/watch?v=e1YFtKowesk&list=PLfzooD1xfFPBSr63yk_f3l-v8aPT4FxdY';
 
-/** The full base set rulebook PDF (feature 6, D22). */
-const RULEBOOK_URL =
-  'https://pub-a3dc1f83df6d45f0a279ae0036773e78.r2.dev/media/legacy/downloads/metazoo-full-base-set-rules.pdf';
+/** The full rules as a web page (feature 6, D22; the PDF only downloads on Android). */
+const RULEBOOK_URL = 'https://www.metazootcg.com/how-to-play/rules/full';
 
 export default function RulesScreen() {
   const dialog = useDialog();
@@ -45,7 +44,7 @@ export default function RulesScreen() {
               label="RULEBOOK"
               variant="primary"
               onPress={() => open(RULEBOOK_URL, 'rulebook')}
-              accessibilityLabel="Full rulebook (PDF)"
+              accessibilityLabel="Full rulebook"
               testID="rulebook"
             />
           </View>

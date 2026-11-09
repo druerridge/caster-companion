@@ -15,11 +15,11 @@ describe('Rules screen', () => {
     );
   });
 
-  it('opens the full rulebook PDF', async () => {
+  it('opens the full rules web page', async () => {
     await renderRouter('./src/app', { initialUrl: '/rules' });
     await fireEvent.press(await screen.findByTestId('rulebook'));
     expect(Linking.openURL).toHaveBeenCalledWith(
-      'https://pub-a3dc1f83df6d45f0a279ae0036773e78.r2.dev/media/legacy/downloads/metazoo-full-base-set-rules.pdf',
+      'https://www.metazootcg.com/how-to-play/rules/full',
     );
   });
 
