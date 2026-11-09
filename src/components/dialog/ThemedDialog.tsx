@@ -9,7 +9,8 @@ export interface ConfirmOptions {
   title: string;
   message?: string;
   confirmLabel?: string;
-  cancelLabel?: string;
+  /** null hides the cancel button, making it a one-button alert. */
+  cancelLabel?: string | null;
   /** The confirm action loses data (e.g. reset): paint it as a warning. */
   destructive?: boolean;
 }
@@ -64,7 +65,9 @@ export function ThemedDialog({
             </View>
             {message !== undefined && <Text style={styles.message}>{message}</Text>}
             <View style={styles.actions}>
-              <TagButton label={cancelLabel} onPress={onCancel} style={styles.action} />
+              {cancelLabel !== null && (
+                <TagButton label={cancelLabel} onPress={onCancel} style={styles.action} />
+              )}
               <TagButton
                 label={confirmLabel}
                 onPress={onConfirm}

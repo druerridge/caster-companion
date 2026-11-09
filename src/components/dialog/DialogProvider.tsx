@@ -2,9 +2,18 @@ import { createContext, useCallback, useContext, useRef, useState, type ReactNod
 
 import { ThemedDialog, type ConfirmOptions } from './ThemedDialog';
 
+export interface AlertOptions {
+  title: string;
+  message?: string;
+  /** Label of the single dismiss button. */
+  okLabel?: string;
+}
+
 interface DialogApi {
   /** Ask a yes/no question in the app's style. Resolves true if confirmed. */
   confirm: (options: ConfirmOptions) => Promise<boolean>;
+  /** Tell the user something in the app's style, with one OK button. Resolves when dismissed. */
+  alert: (options: AlertOptions) => Promise<void>;
 }
 
 const DialogContext = createContext<DialogApi | null>(null);
@@ -29,8 +38,15 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const alert = useCallback(
+    async ({ title, message, okLabel = 'OK' }: AlertOptions) => {
+      await confirm({ title, message, confirmLabel: okLabel, cancelLabel: null });
+    },
+    [confirm],
+  );
+
   return (
-    <DialogContext.Provider value={{ confirm }}>
+    <DialogContext.Provider value={{ confirm, alert }}>
       {children}
       <ThemedDialog
         visible={options !== null}

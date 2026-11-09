@@ -202,7 +202,7 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 ## D21 — "How to Play" button on the Rules screen (feature 5)
 *2026-11-08*
 
-**Decision:** The Rules screen's first item is a primary "HOW TO PLAY" tag button that opens the official How to Play YouTube playlist with `Linking.openURL` (expo-linking). Android hands it to the YouTube app if installed, else the browser. A caption under it says it needs internet; it's the one explicitly online item on the screen. The rest of the screen stays a placeholder for the offline rulebook (feature 6). The design doc was renumbered: How to Play is now feature 5, Quick Rulebook 6, LLM Rules Lookup 7, Cryptid Search 8.
+**Decision:** The Rules screen's first item is a primary "HOW TO PLAY" tag button that opens the official How to Play YouTube playlist with `Linking.openURL` (expo-linking). Android hands it to the YouTube app if installed, else the browser. If no app can open the link, a one-button themed alert (new `useDialog().alert()`) says so. A caption under it says it needs internet; it's the one explicitly online item on the screen. The rest of the screen stays a placeholder for the offline rulebook (feature 6). The design doc was renumbered: How to Play is now feature 5, Quick Rulebook 6, LLM Rules Lookup 7, Cryptid Search 8.
 
 **Why:** Owner's spec. Handing off to YouTube keeps the APK small and avoids embedding a player or a WebView.
 

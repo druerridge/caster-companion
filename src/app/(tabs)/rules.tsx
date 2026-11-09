@@ -2,6 +2,7 @@ import * as Linking from 'expo-linking';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { CardFrame } from '@/components/CardFrame';
+import { useDialog } from '@/components/dialog/DialogProvider';
 import { TagButton } from '@/components/TagButton';
 import { ThemedBackground } from '@/components/ThemedBackground';
 import { colors, fontSizes, spacing } from '@/theme/tokens';
@@ -11,10 +12,16 @@ const HOW_TO_PLAY_URL =
   'https://www.youtube.com/watch?v=e1YFtKowesk&list=PLfzooD1xfFPBSr63yk_f3l-v8aPT4FxdY';
 
 export default function RulesScreen() {
+  const dialog = useDialog();
+
   const openHowToPlay = () => {
-    // Opens in the YouTube app if installed, otherwise the browser. An https URL
-    // always has a handler on Android, so a failure here isn't worth a dialog.
-    Linking.openURL(HOW_TO_PLAY_URL).catch(() => {});
+    // Opens in the YouTube app if installed, otherwise the browser.
+    Linking.openURL(HOW_TO_PLAY_URL).catch(() => {
+      void dialog.alert({
+        title: "Couldn't open video",
+        message: 'No app on this device could open the How to Play videos on YouTube.',
+      });
+    });
   };
 
   return (

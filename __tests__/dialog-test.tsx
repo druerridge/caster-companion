@@ -42,6 +42,19 @@ describe('themed confirm dialog', () => {
     expect(screen.getByText('Second?')).toBeTruthy();
   });
 
+  it('shows a one-button alert that resolves when dismissed', async () => {
+    await renderProvider();
+    let done: Promise<void> | undefined;
+    await act(async () => {
+      done = api.alert({ title: 'Oops', message: 'It broke' });
+    });
+    expect(screen.getByText('It broke')).toBeTruthy();
+    expect(screen.queryByLabelText('Cancel')).toBeNull();
+    await fireEvent.press(screen.getByLabelText('OK'));
+    await expect(done).resolves.toBeUndefined();
+    expect(screen.queryByText('It broke')).toBeNull();
+  });
+
   it('throws a clear error outside the provider', async () => {
     jest.spyOn(console, 'error').mockImplementation(() => {});
     await expect(render(<Probe />)).rejects.toThrow(/DialogProvider/);
