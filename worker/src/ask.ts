@@ -3,6 +3,8 @@
 
 import { validateQuestion, type WorkerError } from '../../src/domain/rulings.ts';
 
+import { formatCard, matchCards, type Card, type CardIndex } from './cards.ts';
+
 export const DEFAULT_MODEL = 'gemini-3.5-flash-lite';
 export const MAX_OUTPUT_TOKENS = 600;
 export const GEMINI_TIMEOUT_MS = 25_000;
@@ -39,6 +41,8 @@ export interface AskDeps {
   limiter: RateLimiter;
   /** Rulebook + errata text the model answers from. */
   grounding: string;
+  /** The card store (D29). Missing or failing means answering without card text. */
+  cards?: () => Promise<CardIndex | null>;
 }
 
 export const SYSTEM_PROMPT = `You are a rules assistant for the MetaZoo trading card game (the 2025 relaunch by GameQbator Labs / MetaTwo). Players ask you ruling questions mid-game.
@@ -51,19 +55,32 @@ Rules for your answers:
 - Cite each source you relied on in square brackets, using its exact heading from the reference text: [Rulebook: Give/Gain/Have & Has/Deal], [Compendium: Replacement Effects], [Organized Play: Official Mulligan Policy] or [Dynamic Deck: 1.3 Minimum Deck Size]. Use "Rulebook" for both rulebooks. Never write URLs; the app turns citations into links.
 - If the reference text doesn't settle it but you can make a reasonable reading, give it and mark it as unofficial.
 - If the reference text doesn't cover it and you can't make a reasonable reading, write one sentence saying what the official rules don't cover, addressed to the player (e.g. "The official rules don't say whether 2021 cards are legal in 2025 tournaments."), then end with exactly [Search Google]. Never reply with [Search Google] alone. The app turns that into a Google search for the question. Never guess at a rule just to avoid this.
+- A question may come with CARD TEXT: official text of cards whose names loosely match the question, because players misspell and shorten card names. Work out which cards the player means, ignore the rest, and combine their text with the rules to answer interaction questions. Cite cards as [Card: <exact card name>].
+- If the player clearly names a card that isn't in CARD TEXT, say you don't have that card's text and end with [Search Google].
 - Plain text only: no Markdown, no headings, no bold. Short dashes for lists are fine.`;
 
 function reply(status: number, body: AskReply['body']): AskReply {
   return { status, body };
 }
 
+/** The user turn: matched card text (if any) ahead of the question (D29). */
+export function userTurn(question: string, cards: Card[] = []): string {
+  if (cards.length === 0) return question;
+  return [
+    '=== CARD TEXT (official card pages, matched loosely from the question; some may be irrelevant) ===',
+    cards.map(formatCard).join('\n\n'),
+    '=== QUESTION ===',
+    question,
+  ].join('\n\n');
+}
+
 /** The generateContent request body for a question. */
-export function buildGeminiRequest(question: string, grounding: string) {
+export function buildGeminiRequest(question: string, grounding: string, cards: Card[] = []) {
   return {
     systemInstruction: {
       parts: [{ text: `${SYSTEM_PROMPT}\n\n=== OFFICIAL REFERENCE TEXT ===\n${grounding}` }],
     },
-    contents: [{ role: 'user', parts: [{ text: question }] }],
+    contents: [{ role: 'user', parts: [{ text: userTurn(question, cards) }] }],
     generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS, temperature: 0.2 },
   };
 }
@@ -128,6 +145,9 @@ export async function handleAsk(req: AskRequest, env: AskEnv, deps: AskDeps): Pr
   const check = validateQuestion(raw);
   if (!check.ok) return reply(400, { error: 'invalid' });
 
+  const index = deps.cards ? await deps.cards().catch(() => null) : null;
+  const cards = index ? matchCards(check.question, index) : [];
+
   const model = env.GEMINI_MODEL || DEFAULT_MODEL;
   try {
     const res = await deps.fetch(
@@ -135,7 +155,7 @@ export async function handleAsk(req: AskRequest, env: AskEnv, deps: AskDeps): Pr
       {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
-        body: JSON.stringify(buildGeminiRequest(check.question, deps.grounding)),
+        body: JSON.stringify(buildGeminiRequest(check.question, deps.grounding, cards)),
         signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
       },
     );

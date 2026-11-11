@@ -44,6 +44,7 @@
     "release": "node scripts/release.ts",
     "setup-signing": "node scripts/setup-signing.ts",
     "grounding": "node scripts/build-grounding.ts",
+    "cards:seed": "node scripts/seed-cards.ts",
     "worker:dev": "npm run grounding && npx --yes wrangler@4.155.0 dev --config worker/wrangler.toml",
     "worker:deploy": "npm run grounding && npx --yes wrangler@4.155.0 deploy --config worker/wrangler.toml",
     "worker:secret": "npx --yes wrangler@4.155.0 secret put GEMINI_API_KEY --config worker/wrangler.toml",

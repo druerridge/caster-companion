@@ -1,5 +1,7 @@
 // Pure helpers for building the Rules Worker's reference text (feature 7, D23).
 
+import { stripTags } from '../worker/src/html.ts';
+
 /** Lines that are card-image debris rather than rules prose. */
 function isDebris(line: string): boolean {
   if (line.length < 3) return true;
@@ -39,37 +41,6 @@ export function cleanPdfText(raw: string): string {
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
-}
-
-const ENTITIES: Record<string, string> = {
-  amp: '&',
-  lt: '<',
-  gt: '>',
-  quot: '"',
-  apos: "'",
-  nbsp: ' ',
-  '#39': "'",
-};
-
-function decodeEntities(text: string): string {
-  return text
-    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
-    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(parseInt(dec, 10)))
-    .replace(/&([a-z#0-9]+);/gi, (match, name: string) => ENTITIES[name] ?? match);
-}
-
-function stripTags(html: string): string {
-  return decodeEntities(
-    html
-      .replace(/<\/(p|li|div|tr|section|h\d)>/gi, '\n')
-      .replace(/<\/t[dh]>/gi, ' ')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<[^>]+>/g, ''),
-  )
-    .split('\n')
-    .map((line) => line.replace(/\s+/g, ' ').trim())
-    .filter(Boolean)
-    .join('\n');
 }
 
 export interface CompendiumEntry {

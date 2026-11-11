@@ -47,5 +47,6 @@ yarn-error.*
 # stay out of the public repo. worker/.dev.vars holds a local Gemini key.
 /OfflineDocumentRulesReferences/
 worker/src/grounding.generated.txt
+worker/src/cards.generated.json
 worker/.dev.vars
 worker/.wrangler/
