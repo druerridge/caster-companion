@@ -13,6 +13,17 @@ KILL_SWITCH = "off"
 # Free-tier Gemini model. Check AI Studio's model list if it gets retired.
 GEMINI_MODEL = "gemini-3.5-flash-lite"
 
+# Card store (D29): official card text for interaction questions, one key "cards".
+# Create once with `npx wrangler kv namespace create CARDS --config worker/wrangler.toml`
+# and paste the printed id here. Fill it with `npm run cards:seed -- --remote`.
+[[kv_namespaces]]
+binding = "CARDS"
+id = "REPLACE_WITH_CARDS_NAMESPACE_ID"
+
+# Every 15 minutes, add up to 2 new cards from the sitemap (D29).
+[triggers]
+crons = ["*/15 * * * *"]
+
 # Per-IP limit: 12 questions a minute (D24).
 [[ratelimits]]
 name = "ASK_LIMITER"

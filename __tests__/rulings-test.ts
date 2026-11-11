@@ -178,6 +178,22 @@ describe('linkCitations', () => {
     ]);
   });
 
+  it('links cards to the official card search and dev rulings to the Discord channel (D29)', () => {
+    expect(linkCitations('[Card: Piasa Bird] [Dev Ruling: Swapping Aura]')).toEqual([
+      {
+        kind: 'link',
+        label: 'Card: Piasa Bird',
+        url: 'https://www.metazootcg.com/cards?q=Piasa%20Bird',
+      },
+      { kind: 'text', text: ' ' },
+      {
+        kind: 'link',
+        label: 'Dev Ruling: Swapping Aura',
+        url: 'https://discord.com/channels/718206187522490380/1347653067230806026',
+      },
+    ]);
+  });
+
   it('leaves uncited text alone', () => {
     expect(linkCitations('No sources here [Wiki: nope].')).toEqual([
       { kind: 'text', text: 'No sources here [Wiki: nope].' },

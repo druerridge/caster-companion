@@ -6,8 +6,10 @@
 // worker/src/grounding.generated.txt (gitignored). Needs `pdftotext`, which
 // ships with Git for Windows. See docs/decisions.md D23.
 import { spawnSync } from 'node:child_process';
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+import type { DevRuling } from '../worker/src/devRulings.ts';
 
 import {
   assembleGrounding,
@@ -22,6 +24,17 @@ import {
 const ROOT = join(import.meta.dirname, '..');
 const REFS = join(ROOT, 'OfflineDocumentRulesReferences');
 const OUT = join(ROOT, 'worker', 'src', 'grounding.generated.txt');
+const RULINGS_OUT = join(ROOT, 'worker', 'src', 'dev-rulings.generated.txt');
+
+function isRulings(value: unknown): value is DevRuling[] {
+  const strings = (v: unknown) => Array.isArray(v) && v.every((s) => typeof s === 'string');
+  return (
+    Array.isArray(value) &&
+    value.every((r: Partial<DevRuling>) => {
+      return typeof r.title === 'string' && typeof r.text === 'string' && strings(r.cards) && strings(r.terms);
+    })
+  );
+}
 const ERRATA_URL = 'https://www.metazootcg.com/how-to-play/errata';
 
 /**
@@ -81,6 +94,15 @@ async function main(): Promise<void> {
 
   const text = assembleGrounding({ fullRules, quickPlay, compendium, pages });
   writeFileSync(OUT, text, 'utf8');
+
+  // Paraphrased developer rulings (D29), picked per question by the Worker.
+  const rulingsSrc = join(REFS, 'dev-rulings.json');
+  const rulings: unknown = existsSync(rulingsSrc)
+    ? JSON.parse(readFileSync(rulingsSrc, 'utf8'))
+    : [];
+  if (!isRulings(rulings)) throw new Error(`${rulingsSrc}: expected [{ title, cards, terms, text }]`);
+  writeFileSync(RULINGS_OUT, JSON.stringify(rulings), 'utf8');
+  console.log(`Wrote ${RULINGS_OUT}: ${rulings.length} dev rulings`);
   const pageCounts = pages.map((p) => `${p.label} ${p.sections.length}`).join(', ');
   console.log(
     `Wrote ${OUT}\n  compendium entries: ${compendium.length}\n  page sections: ${pageCounts}\n  ~${estimateTokens(text)} tokens`,

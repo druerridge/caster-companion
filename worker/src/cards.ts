@@ -232,7 +232,9 @@ export function buildCardIndex(all: Card[], rulesWords: Set<string> = new Set())
   const byLength = new Map<number, string[]>();
   for (const [word, ids] of containing) {
     vocab.set(word, { idf: Math.log((cards.length + 1) / ids.size), cards: [...ids] });
-    byLength.set(word.length, [...(byLength.get(word.length) ?? []), word]);
+    const bucket = byLength.get(word.length);
+    if (bucket) bucket.push(word);
+    else byLength.set(word.length, [word]);
   }
   const masks = new Map([...vocab.keys()].map((w) => [w, letterMask(w)]));
   return { cards, vocab, byLength, masks, joined, rulesWords };
@@ -296,6 +298,91 @@ export function matchCards(question: string, index: CardIndex, max = MAX_CARDS):
     .slice(0, max)
     .map(({ id }) => index.cards[id])
     .filter((c): c is Card => c !== undefined);
+}
+
+// ---------------------------------------------------------------------------
+// Storage (D29). The index is precomputed (seed script, or the Cron when it
+// adds a card) and stored as JSON, so a cold Worker only parses it: building
+// it from scratch costs ~4 ms of the free plan's 10 ms CPU per request.
+
+export interface StoredIndex {
+  v: 1;
+  /** One card per distinct name (newest printing). */
+  cards: Card[];
+  /** URLs of older printings that were deduped away, so the Cron knows them. */
+  otherUrls: string[];
+  vocab: [word: string, idf: number, cards: number[]][];
+  joined: [pair: string, a: string, b: string][];
+}
+
+/** Builds the index from every printing and returns it in storable form. */
+export function storeIndex(all: Card[]): StoredIndex {
+  const index = buildCardIndex(all);
+  const kept = new Set(index.cards.map((c) => c.url));
+  return {
+    v: 1,
+    cards: index.cards,
+    otherUrls: [...new Set(all.map((c) => c.url).filter((u) => !kept.has(u)))],
+    vocab: [...index.vocab].map(([w, { idf, cards }]) => [w, idf, cards]),
+    joined: [...index.joined].map(([p, [a, b]]) => [p, a, b]),
+  };
+}
+
+/** Rehydrates a stored index: cheap Map building only, no tokenizing. */
+export function loadIndex(stored: StoredIndex, rulesWords: Set<string> = new Set()): CardIndex {
+  const vocab = new Map(stored.vocab.map(([w, idf, cards]) => [w, { idf, cards }]));
+  const byLength = new Map<number, string[]>();
+  const masks = new Map<string, number>();
+  for (const w of vocab.keys()) {
+    const bucket = byLength.get(w.length);
+    if (bucket) bucket.push(w);
+    else byLength.set(w.length, [w]);
+    masks.set(w, letterMask(w));
+  }
+  const joined = new Map(stored.joined.map(([p, a, b]) => [p, [a, b] as [string, string]]));
+  return { cards: stored.cards, vocab, byLength, masks, joined, rulesWords };
+}
+
+export interface RefreshDeps {
+  fetch: (url: string) => Promise<{ ok: boolean; status: number; text: () => Promise<string> }>;
+  get: () => Promise<StoredIndex | null>;
+  put: (index: StoredIndex) => Promise<void>;
+}
+
+/** Card pages the Cron fetches per run; each costs ~1 ms CPU to parse (D29). */
+export const CARDS_PER_REFRESH = 2;
+
+/**
+ * One Cron run (D29): compare the sitemap with the stored index and add up to
+ * `limit` new cards. Writes only when something was added. Errata needn't be
+ * re-fetched: the bundled Compendium overrides card text.
+ */
+export async function refreshCards(
+  deps: RefreshDeps,
+  limit = CARDS_PER_REFRESH,
+): Promise<{ added: string[]; pending: number }> {
+  const stored = await deps.get();
+  if (!stored) return { added: [], pending: -1 }; // not seeded yet: run npm run cards:seed
+  const sitemap = await deps.fetch(`${SITE}/sitemap.xml`);
+  if (!sitemap.ok) throw new Error(`sitemap -> ${sitemap.status}`);
+  const known = new Set([...stored.cards.map((c) => c.url), ...stored.otherUrls]);
+  const missing = cardUrlsFromSitemap(await sitemap.text()).filter((u) => !known.has(u));
+
+  const added: Card[] = [];
+  const unparseable: string[] = []; // fetched fine but not a card page: don't retry forever
+  for (const url of missing.slice(0, limit)) {
+    const res = await deps.fetch(url);
+    if (!res.ok) continue; // transient: try again next run
+    const card = parseCardPage(await res.text(), url);
+    if (card) added.push(card);
+    else unparseable.push(url);
+  }
+  if (added.length > 0 || unparseable.length > 0) {
+    const next = added.length > 0 ? storeIndex([...stored.cards, ...added]) : { ...stored };
+    next.otherUrls = [...new Set([...stored.otherUrls, ...next.otherUrls, ...unparseable])];
+    await deps.put(next);
+  }
+  return { added: added.map((c) => c.name), pending: Math.max(0, missing.length - limit) };
 }
 
 /** How a card appears in the prompt's CARD TEXT block. */

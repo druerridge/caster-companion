@@ -170,5 +170,6 @@ describe('buildGeminiRequest', () => {
     const req = buildGeminiRequest('q', 'g');
     expect(req.generationConfig.maxOutputTokens).toBeLessThanOrEqual(1000);
     expect(req.systemInstruction.parts[0]?.text).toMatch(/MetaZoo/);
+    expect(req.generationConfig.temperature).toBe(0); // same question, same ruling (D29)
   });
 });

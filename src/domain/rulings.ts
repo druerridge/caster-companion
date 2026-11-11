@@ -212,6 +212,8 @@ const SOURCES = [
   ...Object.keys(SOURCE_ALIASES), // before the shorter names they contain
   'Rulebook',
   'Compendium',
+  'Card',
+  'Dev Ruling',
   ...Object.keys(CITED_PAGES),
 ].join('|');
 const CITATION = new RegExp(
@@ -219,8 +221,16 @@ const CITATION = new RegExp(
   'g',
 );
 
+/** The official card search (D29): `[Card: X]` links to a search for X. */
+export const CARD_SEARCH_URL = 'https://www.metazootcg.com/cards?q=';
+/** Official Discord gameplay-questions channel, where dev rulings come from (D29). */
+export const DEV_RULINGS_URL =
+  'https://discord.com/channels/718206187522490380/1347653067230806026';
+
 function citationUrl(source: string, title: string): string {
   if (source === 'Rulebook') return RULEBOOK_URL; // page images: no text to target
+  if (source === 'Card') return `${CARD_SEARCH_URL}${encodeURIComponent(title)}`;
+  if (source === 'Dev Ruling') return DEV_RULINGS_URL;
   const page = source === 'Compendium' ? ERRATA_URL : (CITED_PAGES[source] ?? RULEBOOK_URL);
   return `${page}#:~:text=${textFragment(title)}`;
 }

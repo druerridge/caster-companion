@@ -4,12 +4,17 @@ import {
   cardUrlsFromSitemap,
   editDistance,
   formatCard,
+  loadIndex,
   matchCards,
   parseCardPage,
+  refreshCards,
   rulesWordsFrom,
+  storeIndex,
   tokenize,
   type Card,
+  type StoredIndex,
 } from '../worker/src/cards';
+import { fitExtras, selectRulings, type DevRuling } from '../worker/src/devRulings';
 
 // Synthetic page in the official layout (D29); the text is invented.
 const PAGE = `<html><body><main><nav><a href="/cards">← Back to Cards</a></nav><div>
@@ -163,6 +168,130 @@ describe('userTurn', () => {
     const text = userTurn('q?', [{ ...card('Archive'), line: 'Air Caster', text: 'Cost 2' }]);
     expect(text).toMatch(/^=== CARD TEXT/);
     expect(text).toContain('### Archive (Set MZ1 #1) — Air Caster\nCost 2');
+    expect(text.endsWith('=== QUESTION ===\n\nq?')).toBe(true);
+  });
+});
+
+describe('stored index (D29)', () => {
+  it('round-trips: a loaded index matches like a freshly built one', () => {
+    const all = [
+      card('Goofus Bird', 'MZ1', 7),
+      card('Piasa Bird', 'MZ1', 25),
+      card('Goofus Bird', 'MZ3', 5),
+    ];
+    const stored = JSON.parse(JSON.stringify(storeIndex(all))) as StoredIndex;
+    expect(stored.cards).toHaveLength(2);
+    expect(stored.otherUrls).toEqual(['u/MZ1/7']);
+    const q = 'does goofus work with piasa';
+    expect(matchCards(q, loadIndex(stored))).toEqual(matchCards(q, buildCardIndex(all)));
+  });
+});
+
+describe('refreshCards (D29)', () => {
+  const url = (n: number) => `https://www.metazootcg.com/card/MZ1/${n}`;
+  const sitemap = (ns: number[]) =>
+    `<urlset>${ns.map((n) => `<url><loc>${url(n)}</loc></url>`).join('')}</urlset>`;
+  const pageFor = (n: number) =>
+    PAGE.replace('Test Bird', `Bird ${'abcdefghij'[n]}`).replace('#<!-- -->25', `#<!-- -->${n}`);
+
+  function setup(
+    stored: StoredIndex | null,
+    sitemapNs: number[],
+    pages: Record<string, string | number>,
+  ) {
+    const fetched: string[] = [];
+    const puts: StoredIndex[] = [];
+    const deps = {
+      fetch: (u: string) => {
+        fetched.push(u);
+        const body = u.endsWith('sitemap.xml') ? sitemap(sitemapNs) : pages[u];
+        const status = typeof body === 'number' ? body : 200;
+        return Promise.resolve({
+          ok: status === 200,
+          status,
+          text: () => Promise.resolve(String(body)),
+        });
+      },
+      get: () => Promise.resolve(stored),
+      put: (i: StoredIndex) => {
+        puts.push(i);
+        return Promise.resolve();
+      },
+    };
+    return { deps, fetched, puts };
+  }
+
+  it('reports not seeded without fetching', async () => {
+    const { deps, fetched } = setup(null, [1], {});
+    await expect(refreshCards(deps)).resolves.toEqual({ added: [], pending: -1 });
+    expect(fetched).toEqual([]);
+  });
+
+  it('adds at most the limit of missing cards and writes once', async () => {
+    const stored = storeIndex([{ ...card('Bird b'), url: url(1) }]);
+    const pages = { [url(2)]: pageFor(2), [url(3)]: pageFor(3), [url(4)]: pageFor(4) };
+    const { deps, fetched, puts } = setup(stored, [1, 2, 3, 4], pages);
+    await expect(refreshCards(deps, 2)).resolves.toEqual({
+      added: ['Bird c', 'Bird d'],
+      pending: 1,
+    });
+    expect(fetched).not.toContain(url(1));
+    expect(puts).toHaveLength(1);
+    expect(puts[0]?.cards.map((c) => c.name).sort()).toEqual(['Bird b', 'Bird c', 'Bird d']);
+  });
+
+  it('skips transient failures, remembers unparseable pages, and does not write when nothing changed', async () => {
+    const stored = storeIndex([{ ...card('Bird b'), url: url(1) }]);
+    const flaky = setup(stored, [1, 2], { [url(2)]: 503 });
+    await expect(refreshCards(flaky.deps)).resolves.toEqual({ added: [], pending: 0 });
+    expect(flaky.puts).toEqual([]);
+
+    const junk = setup(stored, [1, 2], { [url(2)]: '<html>not a card</html>' });
+    await refreshCards(junk.deps);
+    expect(junk.puts[0]?.otherUrls).toContain(url(2));
+
+    const same = setup(stored, [1], {});
+    await refreshCards(same.deps);
+    expect(same.puts).toEqual([]);
+  });
+});
+
+describe('dev rulings (D29)', () => {
+  const rulings: DevRuling[] = [
+    {
+      title: 'Archive and repeated moves',
+      cards: ['Archive'],
+      terms: ['move'],
+      text: 'Each move counts.',
+    },
+    { title: 'Swapping aura', cards: [], terms: ['swap', 'aura'], text: 'Swaps are not plays.' },
+    { title: 'Unrelated', cards: [], terms: ['lane'], text: 'x' },
+  ];
+
+  it('selects rulings by matched card or two matching terms, best first', () => {
+    expect(
+      selectRulings('can archive trigger on every move', [card('Archive')], rulings).map(
+        (r) => r.title,
+      ),
+    ).toEqual(['Archive and repeated moves']);
+    expect(selectRulings('if i swap an aura', [], rulings).map((r) => r.title)).toEqual([
+      'Swapping aura',
+    ]);
+    expect(selectRulings('what is a lane', [], rulings)).toEqual([]);
+  });
+
+  it('fits cards before rulings within the token budget', () => {
+    const big = { ...card('Archive'), text: 'x'.repeat(700) };
+    const small = rulings[1]!;
+    expect(fitExtras([big], [small], formatCard, 220)).toEqual({ cards: [big], rulings: [] });
+    expect(fitExtras([big], [small], formatCard, 1000).rulings).toEqual([small]);
+    expect(fitExtras([big], [small], formatCard, 50)).toEqual({ cards: [], rulings: [small] });
+  });
+
+  it('adds a DEV RULINGS section to the user turn', () => {
+    const text = userTurn('q?', [], [rulings[1]!]);
+    expect(text).toContain('### Swapping aura\nSwaps are not plays.');
+    expect(text).toMatch(/=== DEV RULINGS/);
     expect(text.endsWith('=== QUESTION ===\n\nq?')).toBe(true);
   });
 });

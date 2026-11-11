@@ -12,7 +12,15 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { handleAsk } from '../worker/src/ask.ts';
-import { buildCardIndex, matchCards, rulesWordsFrom, type Card } from '../worker/src/cards.ts';
+import {
+  formatCard,
+  loadIndex,
+  matchCards,
+  rulesWordsFrom,
+  storeIndex,
+  type Card,
+} from '../worker/src/cards.ts';
+import { fitExtras, selectRulings, type DevRuling } from '../worker/src/devRulings.ts';
 
 interface EvalCase {
   question: string;
@@ -41,7 +49,12 @@ async function main(): Promise<void> {
   const all = JSON.parse(
     readFileSync(join(ROOT, 'worker', 'src', 'cards.generated.json'), 'utf8'),
   ) as Card[];
-  const index = buildCardIndex(all, rulesWordsFrom(grounding));
+  // Same path as production: stored (precomputed) index, then load.
+  const index = loadIndex(storeIndex(all), rulesWordsFrom(grounding));
+  const rulingsPath = join(ROOT, 'worker', 'src', 'dev-rulings.generated.txt');
+  const rulings = (
+    process.env.EVAL_NO_RULINGS ? [] : JSON.parse(readFileSync(rulingsPath, 'utf8'))
+  ) as DevRuling[];
   const key = /^GEMINI_API_KEY=(.+)$/m
     .exec(readFileSync(join(ROOT, 'worker', '.dev.vars'), 'utf8'))?.[1]
     ?.trim();
@@ -52,7 +65,13 @@ async function main(): Promise<void> {
   let found = 0;
   for (const [i, c] of cases.entries()) {
     const t0 = performance.now();
-    const matched = matchCards(c.question, index).map((card) => card.name);
+    const matchedCards = matchCards(c.question, index);
+    const matched = matchedCards.map((card) => card.name);
+    const extras = fitExtras(
+      matchedCards,
+      selectRulings(c.question, matchedCards, rulings),
+      formatCard,
+    );
     const matchMs = performance.now() - t0;
     const missing = (c.cards ?? []).filter(
       (want) => !matched.some((m) => norm(m).includes(norm(want)) || norm(want).includes(norm(m))),
@@ -74,6 +93,7 @@ async function main(): Promise<void> {
         limiter: { limit: () => Promise.resolve({ success: true }) },
         grounding,
         cards: process.env.EVAL_NO_CARDS ? undefined : () => Promise.resolve(index),
+        rulings,
       },
     );
     const answer = 'answer' in reply.body ? reply.body.answer : `ERROR ${reply.body.error}`;
@@ -82,6 +102,9 @@ async function main(): Promise<void> {
     console.log(
       `  matched: ${matched.join(' | ') || '(none)'}${missing.length ? `  MISSING: ${missing.join(', ')}` : ''}`,
     );
+    if (extras.rulings.length) {
+      console.log(`  rulings: ${extras.rulings.map((r) => r.title).join(' | ')}`);
+    }
     console.log(`  got:      ${answer.replace(/\n+/g, ' ')}`);
     if (c.answer) console.log(`  expected: ${c.answer.replace(/\n+/g, ' ')}`);
     await sleep(PACE_MS);

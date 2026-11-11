@@ -307,3 +307,30 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 - **Button label.** HOW TO PLAY stays as is; it wasn't renamed to "HOW TO PLAY VIDEOS". In the button font (Lilita One 20, letter spacing 1), "HOW TO PLAY VIDEOS" measures 213 dp. Each half-width button has roughly 120–150 dp for its label on 360–412 dp phones, so the label would wrap to two lines and make the top row about 16 dp taller, taking room from the chat when the keyboard is open.
 
 **Why:** Owner feedback on v0.9.3. Long answers showed only their last lines; people read from the top. The label was renamed only if it didn't crowd the screen.
+
+## D29 — Rules answers: matched card text and developer rulings (amends D23, D27)
+*2026-11-11*
+
+**Decision:**
+- **Card store.** The Worker keeps every card's official text in a Workers KV namespace (`CARDS`, one key `cards`, ~250 KB). `npm run cards:seed` crawls the card pages listed in metazootcg.com's sitemap (721 printings, 604 distinct names; robots.txt allows `/card/`, only `/api` is disallowed), parses them, and uploads a precomputed match index. A Cron every 15 minutes fetches the sitemap and adds up to 2 cards it doesn't know, writing only when something changed. A new set of ~230 cards is picked up in about a day without an app update or redeploy; re-running the seed makes it immediate. Known cards aren't re-fetched: errata live in the Compendium, which overrides card text.
+- **Matching (recall first).** For each question the Worker picks up to 5 cards whose names the question mentions, allowing lowercase, misspellings (up to 2 edits), shortened names (a ≥4-letter prefix, or one distinctive word of a multi-word name), plurals and split or joined words. Name words are weighted by rarity (IDF), and words that are common in the rules text ("creature", "lane") count for less. Free slots go to the next-best near matches. Reprints collapse to the newest printing. Missing a needed card is the failure to avoid; sending irrelevant ones is cheap.
+- **Developer rulings.** `OfflineDocumentRulesReferences/dev-rulings.json` holds 32 short paraphrases of rulings MetaZoo's developer gave in the official Discord's gameplay-questions channel (gitignored, like the rest of that folder). A ruling is sent when it's about a matched card or two of its terms appear in the question. The model treats them as official where they apply; the Compendium wins if they conflict.
+- **Request shape.** Card text and rulings go in the user turn ahead of the question, so the system instruction stays fixed. Together they're capped at ~600 tokens (cards first), which keeps the per-minute ceiling at 15 questions (250k tokens ÷ 15 = 16.7k per request; base prompt 15,977). They add no requests, so the 500-a-day limit is unaffected. Temperature is 0, so the same question gets the same ruling.
+- **Citations.** `[Card: <name>]` links to the official card search (`/cards?q=<name>`); `[Dev Ruling: <title>]` links to the Discord channel. If a question names a card that isn't in the card text, the model says so and ends with `[Search Google]`.
+
+**Why:** Owner: card-interaction questions will be the next most common kind, and they were answered "the rules don't cover specific cards… [Search Google]". The owner asked for live card data rather than a build-time bundle, and for loose matching that errs toward including cards.
+
+**Evaluation** (28 real questions from the Discord export with known answers, `gemini-3.5-flash-lite`, `scripts/eval-cards.ts`):
+- Without card text: about 6 of 26 correct; most answers punted to Google.
+- With card text: 17–19 of 26, about 5 wrong (3 of them the same Static Wand ruling that exists only on Discord), 3–4 punts.
+- With card text and dev rulings: 25 of 28 correct, 0 punts. Cases 1–13 were developer answers that the rulings were paraphrased from, so they flatter the result; on the 15 staff-answered cases it was 12 of 15.
+- Card recall: 32 of 33 expected cards matched (the miss was a name the asker misremembered; the right card was matched).
+- `gemini-3.5-flash` wasn't viable: its free quota is ~20–25 requests a day.
+
+**Limits checked:** Cloudflare's free plan allows 10 ms CPU and 50 subrequests per request and per Cron run. Measured in Node: parsing and loading the stored index takes ~3 ms; the first match in a fresh isolate ~3–4.5 ms (cold JIT), later matches ~0.6 ms. The index is cached for 10 minutes per isolate and the rules-word list is computed once at module load, so only the first question after a cold start pays ~6–7 ms, which is close to the 10 ms limit. A Cron run makes 3 subrequests. Confirm real CPU in the Cloudflare dashboard after deploy. If requests exceed the limit, the next step is a smaller stored index (drop the joined-pair table, shorter keys); if the Cron does, drop `CARDS_PER_REFRESH` to 1.
+
+**Alternatives:**
+- Matching in the app: every phone would need the full name list, which only a full crawl produces, and a bundled list goes stale until the next sideloaded APK. It would also let clients put arbitrary text into the prompt.
+- Bundling card text at build time: stale on every release, and all 721 cards (~40k tokens) per request would cut the ceiling to ~4 questions a minute.
+- Calling `/cards?q=` per question: many subrequests per question with no fuzzy matching.
+- Third-party card databases: none cover the 2025 sets.

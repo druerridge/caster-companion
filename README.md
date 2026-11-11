@@ -40,11 +40,13 @@ One-time setup:
 2. Create a free Cloudflare account, then run `npx wrangler login`.
 3. Put the rulebook PDFs (`metazoo-full-base-set-rules.pdf`, `metazoo-quick-play-demo-rules.pdf`) in `OfflineDocumentRulesReferences/`. The folder is gitignored. You need `pdftotext`, which ships with Git for Windows.
 4. Run `npm run worker:secret` and paste the key.
-5. Run `npm run worker:deploy`. Put the printed `https://caster-companion-rules.<you>.workers.dev` URL, followed by `/ask`, in `RULES_ASK_URL` in `src/features/rules/askConfig.ts`.
+5. Card text (D29): run `npx wrangler kv namespace create CARDS --config worker/wrangler.toml`, paste the printed id into `worker/wrangler.toml` (replacing `REPLACE_WITH_CARDS_NAMESPACE_ID`), then run `npm run cards:seed -- --remote`. The first crawl takes about 12 minutes; after that a 15-minute Cron adds new cards on its own.
+6. Run `npm run worker:deploy`. Put the printed `https://caster-companion-rules.<you>.workers.dev` URL, followed by `/ask`, in `RULES_ASK_URL` in `src/features/rules/askConfig.ts`.
 
 | Command | What it does |
 |---|---|
-| `npm run grounding` | Rebuild the reference text (errata page + rulebook PDFs) the model answers from |
+| `npm run grounding` | Rebuild the reference text (errata page, rules web pages, rulebook PDFs, dev rulings from `OfflineDocumentRulesReferences/dev-rulings.json`) |
+| `npm run cards:seed` | Crawl new card pages and rebuild the card index; add `-- --local` or `-- --remote` to upload it to the CARDS store |
 | `npm run worker:dev` | Run the Worker locally on :8787 (put `GEMINI_API_KEY=...` in `worker/.dev.vars`) |
 | `npm run worker:deploy` | Rebuild the reference text and deploy |
 | `npm run worker:tail` | Stream live Worker logs |

@@ -4,6 +4,7 @@
 import { validateQuestion, type WorkerError } from '../../src/domain/rulings.ts';
 
 import { formatCard, matchCards, type Card, type CardIndex } from './cards.ts';
+import { fitExtras, formatRuling, selectRulings, type DevRuling } from './devRulings.ts';
 
 export const DEFAULT_MODEL = 'gemini-3.5-flash-lite';
 export const MAX_OUTPUT_TOKENS = 600;
@@ -43,6 +44,8 @@ export interface AskDeps {
   grounding: string;
   /** The card store (D29). Missing or failing means answering without card text. */
   cards?: () => Promise<CardIndex | null>;
+  /** Paraphrased developer rulings from the official Discord (D29). */
+  rulings?: DevRuling[];
 }
 
 export const SYSTEM_PROMPT = `You are a rules assistant for the MetaZoo trading card game (the 2025 relaunch by GameQbator Labs / MetaTwo). Players ask you ruling questions mid-game.
@@ -57,31 +60,46 @@ Rules for your answers:
 - If the reference text doesn't cover it and you can't make a reasonable reading, write one sentence saying what the official rules don't cover, addressed to the player (e.g. "The official rules don't say whether 2021 cards are legal in 2025 tournaments."), then end with exactly [Search Google]. Never reply with [Search Google] alone. The app turns that into a Google search for the question. Never guess at a rule just to avoid this.
 - A question may come with CARD TEXT: official text of cards whose names loosely match the question, because players misspell and shorten card names. Work out which cards the player means, ignore the rest, and combine their text with the rules to answer interaction questions. Cite cards as [Card: <exact card name>].
 - If the player clearly names a card that isn't in CARD TEXT, say you don't have that card's text and end with [Search Google].
+- A question may also come with DEV RULINGS: paraphrased rulings MetaZoo's developer gave on the official Discord. Treat them as official where they apply; the Errata & Compendium overrides them if they disagree. Cite them as [Dev Ruling: <exact title>].
 - Plain text only: no Markdown, no headings, no bold. Short dashes for lists are fine.`;
 
 function reply(status: number, body: AskReply['body']): AskReply {
   return { status, body };
 }
 
-/** The user turn: matched card text (if any) ahead of the question (D29). */
-export function userTurn(question: string, cards: Card[] = []): string {
-  if (cards.length === 0) return question;
-  return [
-    '=== CARD TEXT (official card pages, matched loosely from the question; some may be irrelevant) ===',
-    cards.map(formatCard).join('\n\n'),
-    '=== QUESTION ===',
-    question,
-  ].join('\n\n');
+/** The user turn: matched card text and dev rulings (if any) ahead of the question (D29). */
+export function userTurn(question: string, cards: Card[] = [], rulings: DevRuling[] = []): string {
+  if (cards.length === 0 && rulings.length === 0) return question;
+  const parts: string[] = [];
+  if (cards.length > 0) {
+    parts.push(
+      '=== CARD TEXT (official card pages, matched loosely from the question; some may be irrelevant) ===',
+      cards.map(formatCard).join('\n\n'),
+    );
+  }
+  if (rulings.length > 0) {
+    parts.push(
+      '=== DEV RULINGS (paraphrased from the developer on the official Discord) ===',
+      rulings.map(formatRuling).join('\n\n'),
+    );
+  }
+  return [...parts, '=== QUESTION ===', question].join('\n\n');
 }
 
 /** The generateContent request body for a question. */
-export function buildGeminiRequest(question: string, grounding: string, cards: Card[] = []) {
+export function buildGeminiRequest(
+  question: string,
+  grounding: string,
+  cards: Card[] = [],
+  rulings: DevRuling[] = [],
+) {
   return {
     systemInstruction: {
       parts: [{ text: `${SYSTEM_PROMPT}\n\n=== OFFICIAL REFERENCE TEXT ===\n${grounding}` }],
     },
-    contents: [{ role: 'user', parts: [{ text: userTurn(question, cards) }] }],
-    generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS, temperature: 0.2 },
+    contents: [{ role: 'user', parts: [{ text: userTurn(question, cards, rulings) }] }],
+    // Temperature 0: the same question should get the same ruling (D29).
+    generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS, temperature: 0 },
   };
 }
 
@@ -146,7 +164,12 @@ export async function handleAsk(req: AskRequest, env: AskEnv, deps: AskDeps): Pr
   if (!check.ok) return reply(400, { error: 'invalid' });
 
   const index = deps.cards ? await deps.cards().catch(() => null) : null;
-  const cards = index ? matchCards(check.question, index) : [];
+  const matched = index ? matchCards(check.question, index) : [];
+  const { cards, rulings } = fitExtras(
+    matched,
+    selectRulings(check.question, matched, deps.rulings ?? []),
+    formatCard,
+  );
 
   const model = env.GEMINI_MODEL || DEFAULT_MODEL;
   try {
@@ -155,7 +178,7 @@ export async function handleAsk(req: AskRequest, env: AskEnv, deps: AskDeps): Pr
       {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
-        body: JSON.stringify(buildGeminiRequest(check.question, deps.grounding, cards)),
+        body: JSON.stringify(buildGeminiRequest(check.question, deps.grounding, cards, rulings)),
         signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
       },
     );

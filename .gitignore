@@ -48,5 +48,7 @@ yarn-error.*
 /OfflineDocumentRulesReferences/
 worker/src/grounding.generated.txt
 worker/src/cards.generated.json
+worker/src/cards.index.generated.json
+worker/src/dev-rulings.generated.txt
 worker/.dev.vars
 worker/.wrangler/
