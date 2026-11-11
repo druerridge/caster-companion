@@ -145,6 +145,28 @@ describe('linkCitations', () => {
     });
   });
 
+  it('maps section-header names to canonical sources (D27)', () => {
+    expect(linkCitations('[Full Rulebook: Winning the Game] [Errata: Unique]')).toEqual([
+      {
+        kind: 'link',
+        label: 'Rulebook: Winning the Game',
+        url: 'https://www.metazootcg.com/how-to-play/rules/full',
+      },
+      { kind: 'text', text: ' ' },
+      {
+        kind: 'link',
+        label: 'Compendium: Unique',
+        url: 'https://www.metazootcg.com/how-to-play/errata#:~:text=Unique',
+      },
+    ]);
+  });
+
+  it('gives a bare [Search Google] answer a sentence (D27)', () => {
+    expect(cleanAnswer(' [Search Google] ')).toBe(
+      "The official rules don't cover this. [Search Google]",
+    );
+  });
+
   it('turns [Search Google] into a search for the question (D27)', () => {
     expect(linkCitations('Not covered. [Search Google]', 'how do mulligans work?')).toEqual([
       { kind: 'text', text: 'Not covered. ' },

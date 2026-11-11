@@ -148,12 +148,12 @@ export function assembleGrounding({
     sections.map(({ title, text }) => `### ${title}\n${text}`).join('\n\n'),
   ]);
   return [
-    '## OFFICIAL ERRATA & COMPENDIUM (overrides the rulebooks)',
+    '## OFFICIAL ERRATA & COMPENDIUM (overrides the rulebooks; cite as [Compendium: <heading>])',
     entries,
     ...pageBlocks,
-    '## FULL RULEBOOK (base set)',
+    '## FULL RULEBOOK (base set; cite as [Rulebook: <heading>])',
     fullRules,
-    '## QUICK PLAY RULES',
+    '## QUICK PLAY RULES (cite as [Rulebook: <heading>])',
     quickPlay,
   ].join('\n\n');
 }

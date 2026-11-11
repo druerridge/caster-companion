@@ -64,10 +64,10 @@ export function parseAskResponse(body: unknown): AskOutcome {
 /**
  * React Native's Text can't render Markdown, and the model sometimes uses it
  * despite being asked not to. Strips emphasis and headings; turns list markers
- * into bullets.
+ * into bullets. A bare [Search Google] gets a sentence so it isn't a lone link.
  */
 export function cleanAnswer(text: string): string {
-  return text
+  const cleaned = text
     .replace(/\r\n/g, '\n')
     .replace(/\*\*(.+?)\*\*/g, '$1')
     .replace(/__(.+?)__/g, '$1')
@@ -75,6 +75,9 @@ export function cleanAnswer(text: string): string {
     .replace(/^[ \t]*[-*][ \t]+/gm, '• ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+  return cleaned === SEARCH_MARKER
+    ? `The official rules don't cover this. ${SEARCH_MARKER}`
+    : cleaned;
 }
 
 export interface ErrorCopy {
@@ -197,7 +200,20 @@ function textFragment(phrase: string): string {
 // The Worker asks the model to cite as [Rulebook: …], [Compendium: …] or
 // [<page label>: …]; parentheses are accepted too in case it drifts. It writes
 // [Search Google] when the reference text can't answer.
-const SOURCES = ['Rulebook', 'Compendium', ...Object.keys(CITED_PAGES)].join('|');
+// Section-header names the model sometimes uses instead, mapped to canonical labels.
+const SOURCE_ALIASES: Record<string, string> = {
+  'Full Rulebook': 'Rulebook',
+  'Quick Play Rules': 'Rulebook',
+  'Quick Play': 'Rulebook',
+  'Errata & Compendium': 'Compendium',
+  Errata: 'Compendium',
+};
+const SOURCES = [
+  ...Object.keys(SOURCE_ALIASES), // before the shorter names they contain
+  'Rulebook',
+  'Compendium',
+  ...Object.keys(CITED_PAGES),
+].join('|');
 const CITATION = new RegExp(
   `\\[(${SOURCES}): ([^\\]\\n]{1,160})\\]|\\((${SOURCES}): ([^)\\n]{1,160})\\)|\\[Search Google\\]`,
   'g',
@@ -226,7 +242,8 @@ export function linkCitations(text: string, question = ''): AnswerSegment[] {
     if (whole === SEARCH_MARKER) {
       segments.push({ kind: 'link', label: 'Search Google', url: googleSearchUrl(question) });
     } else {
-      const source = bracketSource ?? parenSource ?? '';
+      const raw = bracketSource ?? parenSource ?? '';
+      const source = SOURCE_ALIASES[raw] ?? raw;
       const title = (bracketTitle ?? parenTitle ?? '').trim();
       segments.push({
         kind: 'link',

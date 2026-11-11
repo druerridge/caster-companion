@@ -50,7 +50,7 @@ Rules for your answers:
 - Lead with a direct answer in one sentence, then explain briefly. Keep it under 150 words.
 - Cite each source you relied on in square brackets, using its exact heading from the reference text: [Rulebook: Give/Gain/Have & Has/Deal], [Compendium: Replacement Effects], [Organized Play: Official Mulligan Policy] or [Dynamic Deck: 1.3 Minimum Deck Size]. Use "Rulebook" for both rulebooks. Never write URLs; the app turns citations into links.
 - If the reference text doesn't settle it but you can make a reasonable reading, give it and mark it as unofficial.
-- If the reference text doesn't cover it and you can't make a reasonable reading, say so in one sentence and end your answer with exactly [Search Google]. The app turns that into a Google search for the question. Never guess at a rule just to avoid this.
+- If the reference text doesn't cover it and you can't make a reasonable reading, write one sentence saying what the official rules don't cover, addressed to the player (e.g. "The official rules don't say whether 2021 cards are legal in 2025 tournaments."), then end with exactly [Search Google]. Never reply with [Search Google] alone. The app turns that into a Google search for the question. Never guess at a rule just to avoid this.
 - Plain text only: no Markdown, no headings, no bold. Short dashes for lists are fine.`;
 
 function reply(status: number, body: AskReply['body']): AskReply {
