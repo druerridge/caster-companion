@@ -44,10 +44,24 @@ export function RulesChat() {
   const input = useRef<TextInputInstance>(null);
   const scroll = useRef<ScrollViewInstance>(null);
   const nextId = useRef(1);
+  /** The turn whose answer we last scrolled to, so later re-layouts don't yank the view. */
+  const scrolledTo = useRef<number | null>(null);
   const [draft, setDraft] = useState('');
   const [turns, setTurns] = useState<Turn[]>([]);
   const check = validateQuestion(draft);
   const busy = turns.some((t) => t.status === 'loading');
+  const latest = turns[turns.length - 1];
+
+  // While waiting, keep the new question and spinner in view. Once the answer
+  // arrives, show it from its start (people read top-down), not its end (D28).
+  const onLogSizeChange = () => {
+    if (latest?.status === 'loading') scroll.current?.scrollToEnd({ animated: true });
+  };
+  const onTurnLayout = (turn: Turn, y: number) => {
+    if (turn !== latest || turn.status === 'loading' || scrolledTo.current === turn.id) return;
+    scrolledTo.current = turn.id;
+    scroll.current?.scrollTo({ y, animated: true });
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -100,8 +114,9 @@ export function RulesChat() {
       <CardFrame aura="water" style={styles.log}>
         <ScrollView
           ref={scroll}
+          testID="ask-log"
           keyboardShouldPersistTaps="handled"
-          onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}
+          onContentSizeChange={onLogSizeChange}
           contentContainerStyle={styles.logContent}
         >
           {turns.length === 0 ? (
@@ -114,7 +129,12 @@ export function RulesChat() {
             </View>
           ) : (
             turns.map((turn) => (
-              <View key={turn.id} style={styles.turn}>
+              <View
+                key={turn.id}
+                style={styles.turn}
+                onLayout={(e) => onTurnLayout(turn, e.nativeEvent.layout.y)}
+                testID={`turn-${turn.id}`}
+              >
                 <Text style={styles.question}>{turn.question}</Text>
                 {turn.status === 'loading' && (
                   <ActivityIndicator

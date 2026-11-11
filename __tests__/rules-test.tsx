@@ -1,5 +1,6 @@
 import * as Linking from 'expo-linking';
-import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { ScrollView } from 'react-native';
 
 import { askRuling } from '@/features/rules/askClient';
 
@@ -87,6 +88,39 @@ describe('Rules screen question box', () => {
     await fireEvent.press(screen.getByTestId('ask-submit'));
     expect(await screen.findByText('Second answer.')).toBeTruthy();
     expect(screen.getByText('First answer.')).toBeTruthy();
+  });
+
+  it('scrolls to the start of a new answer, not its end (D28)', async () => {
+    const { scrollTo, scrollToEnd } = ScrollView.prototype as unknown as {
+      scrollTo: jest.Mock;
+      scrollToEnd: jest.Mock;
+    };
+    let reply: (outcome: { kind: 'answer'; text: string }) => void = () => {};
+    ask.mockReturnValueOnce(new Promise((resolve) => (reply = resolve)));
+    await askQuestion('long one?');
+    const turn = await screen.findByTestId('turn-1');
+    const log = screen.getByTestId('ask-log');
+
+    // Waiting: the question and spinner stay in view at the bottom.
+    await fireEvent(log, 'contentSizeChange', 300, 900);
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
+    await fireEvent(turn, 'layout', {
+      nativeEvent: { layout: { x: 0, y: 420, width: 300, height: 80 } },
+    });
+    expect(scrollTo).not.toHaveBeenCalled();
+
+    // Answered: scroll to the top of the turn, once, and don't jump to the end.
+    await act(async () => reply({ kind: 'answer', text: 'A long answer.' }));
+    await fireEvent(log, 'contentSizeChange', 300, 1600);
+    await fireEvent(turn, 'layout', {
+      nativeEvent: { layout: { x: 0, y: 420, width: 300, height: 700 } },
+    });
+    await fireEvent(turn, 'layout', {
+      nativeEvent: { layout: { x: 0, y: 420, width: 300, height: 710 } },
+    });
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+    expect(scrollTo).toHaveBeenCalledWith({ y: 420, animated: true });
   });
 
   it('links cited sources in the answer', async () => {

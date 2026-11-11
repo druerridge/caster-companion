@@ -298,3 +298,12 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 - Search only as a second request on a miss: more Worker logic, and it uses the same paid or old-model grounding.
 - URL context with a fixed list of up to 20 pages: still a whitelist, fetched live on every request.
 - Crawling the whole site: mostly cryptid, news and store pages.
+
+## D28 — Rules chat scrolls to the start of a new answer (amends D25)
+*2026-11-10*
+
+**Decision:**
+- **Scrolling.** While a question is waiting, the log still scrolls to the end, so the question and spinner are visible. When the answer (or error) arrives, the log scrolls once to the top of that turn, so the question sits at the top of the card and the answer reads from its first line. Later layout changes for that turn don't scroll again. The scroll position comes from the turn's `onLayout`.
+- **Button label.** HOW TO PLAY stays as is; it wasn't renamed to "HOW TO PLAY VIDEOS". In the button font (Lilita One 20, letter spacing 1), "HOW TO PLAY VIDEOS" measures 213 dp. Each half-width button has roughly 120–150 dp for its label on 360–412 dp phones, so the label would wrap to two lines and make the top row about 16 dp taller, taking room from the chat when the keyboard is open.
+
+**Why:** Owner feedback on v0.9.3. Long answers showed only their last lines; people read from the top. The label was renamed only if it didn't crowd the screen.
