@@ -1,0 +1,23 @@
+# Rules Lookup proxy (feature 7, D23). Deploy with `npm run worker:deploy`.
+# The Gemini key is a secret: `npm run worker:secret` (never put it in this file).
+name = "caster-companion-rules"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[vars]
+# Shared with the app (src/features/rules/askConfig.ts). Obfuscation only.
+APP_TOKEN = "cc-rules-v1-7f3a9c"
+# Set to "on" to switch in-app answers off; the app then offers chat-app handoff.
+KILL_SWITCH = "off"
+# Free-tier Gemini model. Check AI Studio's model list if it gets retired.
+GEMINI_MODEL = "gemini-3.5-flash-lite"
+
+# Per-IP limit: 5 questions a minute.
+[[ratelimits]]
+name = "ASK_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 5
+  period = 60

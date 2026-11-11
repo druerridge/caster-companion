@@ -20,7 +20,7 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 
 **Why:** Owner's preferred review cadence; keeps feedback tight.
 
-## D3 — LLM rulings lookup deferred
+## D3 — LLM rulings lookup deferred (**Superseded by D23**)
 *2026-11-05*
 
 **Decision:** Feature 5 (LLM rulings) is parked until we reach it.
@@ -208,7 +208,7 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 
 **Alternatives:** an in-app embedded player (needs a WebView dependency, worse playback than the YouTube app); an in-app browser tab via expo-web-browser (extra dependency, and wouldn't hand off to the YouTube app).
 
-## D22 � Rulebook link on the Rules screen (feature 6, first part)
+## D22 — Rulebook link on the Rules screen (feature 6, first part)
 *2026-11-08*
 
 **Decision:** A primary "RULEBOOK" tag button under How to Play opens the full rules web page, metazootcg.com/how-to-play/rules/full, in the browser. Same failure alert as D21. v0.8.0 linked the base set rules PDF (`metazoo-full-base-set-rules.pdf` on the publisher's r2.dev host, ~20 MB), but on the owner's phone it only downloaded instead of opening (v0.8.1 switched). It needs internet; offline caching, errata and search stay open for the rest of feature 6.
@@ -216,3 +216,29 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 **Why:** Owner asked for a link to the rulebook. The PDF is the canonical document; linking keeps the APK small and always current.
 
 **Alternatives:** the PDF link (only downloads on Android); bundling or caching the PDF for offline use (deferred; 20 MB).
+
+## D23 — Rules Lookup via a Gemini proxy on a Cloudflare Worker (feature 7; supersedes D3)
+*2026-11-10*
+
+**Decision:**
+- **Flow.** Rules → "ASK A RULING" opens `/ask`. The player types a question (max 500 characters) and the app POSTs it to a Cloudflare Worker (`worker/`). The Worker calls Gemini (`gemini-3.5-flash-lite`, set by the `GEMINI_MODEL` var) and returns `{ answer }` or `{ error }`. The answer shows in the app as plain text, with a note that it's an unofficial AI answer and that questions go to Google.
+- **Key handling.** The Gemini key comes from a free AI Studio project with **no billing account**, stored as a Wrangler secret. It never appears in the app or the repo. Google's API terms require keys to be kept confidential and forbid embedding them in open source projects, so a key in the APK was never an option. With no billing linked, abuse can only use up the free daily quota; it can never cost money.
+- **Scope and abuse limits.** The Worker only answers MetaZoo rules questions, with one fixed model and system prompt, so it can't be used as general free Gemini access. It also:
+  - requires an `x-app-token` header (obfuscation only, since the token ships in the app);
+  - limits each IP to 5 requests a minute (Cloudflare rate-limit binding);
+  - has a `KILL_SWITCH` var that turns it off.
+- **Grounding.** Every request carries about 15k tokens of reference text: the official Errata & Compendium (fetched from metazootcg.com/how-to-play/errata, which robots.txt allows), plus the full rulebook and quick play PDFs (extracted with `pdftotext` and cleaned of card-image debris). The prompt tells the model the compendium wins where sources disagree, and to cite the section it used. `npm run grounding` builds `worker/src/grounding.generated.txt`; `worker:dev` and `worker:deploy` run it first. Both the source folder (`OfflineDocumentRulesReferences/`) and the generated text are gitignored: the rulebook text and the Discord export aren't ours to republish in a public repo.
+- **Failures.** Errors are matched to friendly messages (`errorCopy` in `src/domain/rulings.ts`).
+  - No connection: says so.
+  - Rate limited: asks the player to wait.
+  - Daily quota used up, Worker switched off, Gemini refusing or failing, or a 20 s timeout: offers to send the same question to ChatGPT or Claude with a prefilled link ("In MetaZoo 2025, …").
+- **Shared code.** The request and response contract and question validation live in `src/domain/rulings.ts`; the Worker imports it. Worker logic (`worker/src/ask.ts`) is pure apart from the injected `fetch` and limiter, so Jest tests it in `npm run check`. `worker/src/index.ts` is a thin adapter to the Workers runtime.
+
+**Why:** Owner's choice, after comparing chat-app handoff, bring-your-own key, an owner-hosted proxy, and on-device models. A proxy gives zero-setup answers inside the app while keeping the key secret and within Google's terms.
+
+**Known limits:**
+- The free quota is shared by every user and resets at midnight Pacific.
+- Free-tier prompts may be used by Google for training and read by human reviewers.
+- Gemini's terms allow only paid services for apps made available to users in the EEA (and, per the terms, Switzerland and the UK). That's fine for the owner and friends, but needs revisiting before a wide public release.
+
+**Alternatives:** chat-app handoff only (leaves the app; kept as the fallback); bring-your-own key or "Sign in with OpenRouter" (setup for each player); an on-device model (Gemini Nano only on flagships; small open models are large downloads and weak at rulings); embedding the key (breaks Google's terms).

@@ -1,4 +1,5 @@
 import * as Linking from 'expo-linking';
+import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { CardFrame } from '@/components/CardFrame';
@@ -46,6 +47,13 @@ export default function RulesScreen() {
               onPress={() => open(RULEBOOK_URL, 'rulebook')}
               accessibilityLabel="Full rulebook"
               testID="rulebook"
+            />
+            <TagButton
+              label="ASK A RULING"
+              variant="primary"
+              onPress={() => router.push('/ask')}
+              accessibilityLabel="Ask a rules question"
+              testID="ask-ruling"
             />
           </View>
           <Text style={styles.text}>Errata and offline quick reference.</Text>

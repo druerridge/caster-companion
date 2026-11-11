@@ -42,3 +42,10 @@ yarn-error.*
 
 # release keystores / signing secrets never live in the repo
 *.keystore
+
+# Rules Lookup (D23): third-party reference material and the text built from it
+# stay out of the public repo. worker/.dev.vars holds a local Gemini key.
+/OfflineDocumentRulesReferences/
+worker/src/grounding.generated.txt
+worker/.dev.vars
+worker/.wrangler/

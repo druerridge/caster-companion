@@ -42,7 +42,12 @@
     "check": "npm run lint && npm run typecheck && npm test",
     "apk": "node scripts/build-apk.ts",
     "release": "node scripts/release.ts",
-    "setup-signing": "node scripts/setup-signing.ts"
+    "setup-signing": "node scripts/setup-signing.ts",
+    "grounding": "node scripts/build-grounding.ts",
+    "worker:dev": "npm run grounding && npx --yes wrangler@4.155.0 dev --config worker/wrangler.toml",
+    "worker:deploy": "npm run grounding && npx --yes wrangler@4.155.0 deploy --config worker/wrangler.toml",
+    "worker:secret": "npx --yes wrangler@4.155.0 secret put GEMINI_API_KEY --config worker/wrangler.toml",
+    "worker:tail": "npx --yes wrangler@4.155.0 tail --config worker/wrangler.toml"
   },
   "private": true,
   "jest": {

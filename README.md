@@ -31,12 +31,33 @@ npm run setup-signing   # one-time: creates ~/.caster-companion/release.keystore
 | `npm run apk` | Build a signed release APK into `dist/` (`-- --clean` regenerates `android/`) |
 | `npm run release` | From a clean `main`: run checks, bump patch version, build APK, tag, push, create a GitHub Release with the APK. Use `-- minor`/`-- major` for bigger bumps, or `-- --no-bump`. |
 
+## Rules Lookup Worker (feature 7, D23)
+
+"Ask a Ruling" sends questions to a Cloudflare Worker (`worker/`) that calls Gemini with a free AI Studio key. The key lives only in Cloudflare.
+
+One-time setup:
+1. In [Google AI Studio](https://aistudio.google.com/apikey), create an API key in a project with **no billing account** linked. Abuse can then only use up the free quota, never cost money.
+2. Create a free Cloudflare account, then run `npx wrangler login`.
+3. Put the rulebook PDFs (`metazoo-full-base-set-rules.pdf`, `metazoo-quick-play-demo-rules.pdf`) in `OfflineDocumentRulesReferences/`. The folder is gitignored. You need `pdftotext`, which ships with Git for Windows.
+4. Run `npm run worker:secret` and paste the key.
+5. Run `npm run worker:deploy`. Put the printed `https://caster-companion-rules.<you>.workers.dev` URL, followed by `/ask`, in `RULES_ASK_URL` in `src/features/rules/askConfig.ts`.
+
+| Command | What it does |
+|---|---|
+| `npm run grounding` | Rebuild the reference text (errata page + rulebook PDFs) the model answers from |
+| `npm run worker:dev` | Run the Worker locally on :8787 (put `GEMINI_API_KEY=...` in `worker/.dev.vars`) |
+| `npm run worker:deploy` | Rebuild the reference text and deploy |
+| `npm run worker:tail` | Stream live Worker logs |
+
+To switch in-app answers off, set `KILL_SWITCH = "on"` in `worker/wrangler.toml` and redeploy. The app then offers to ask ChatGPT or Claude instead. Re-run `worker:deploy` whenever the errata page changes.
+
 ## Layout
 
 - `src/app/`: screens (Expo Router; every file is a route)
 - `src/components/`: shared UI (e.g. `CardFrame`)
 - `src/theme/`: design tokens
 - `src/domain/`: pure game logic, unit-tested without React
+- `worker/`: Cloudflare Worker that proxies Rules Lookup questions to Gemini (D23)
 - `plugins/`: Expo config plugins (release signing)
 - `scripts/`: build/release tooling
 - `__tests__/`: Jest tests
