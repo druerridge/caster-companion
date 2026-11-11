@@ -159,3 +159,51 @@ export function handoffUrl(provider: HandoffProvider, question: string): string 
       return `https://claude.ai/new?q=${q}`;
   }
 }
+
+/** The full rules as a web page (feature 6, D22; the PDF only downloads on Android). */
+export const RULEBOOK_URL = 'https://www.metazootcg.com/how-to-play/rules/full';
+
+/** The official Errata & Compendium page. */
+export const ERRATA_URL = 'https://www.metazootcg.com/how-to-play/errata';
+
+export type AnswerSegment =
+  { kind: 'text'; text: string } | { kind: 'link'; label: string; url: string };
+
+/**
+ * Text-fragment link (`#:~:text=`): Chrome scrolls to and highlights the
+ * phrase. Dashes and commas are syntax in fragments, so they're escaped too.
+ */
+function textFragment(phrase: string): string {
+  return encodeURIComponent(phrase).replace(/-/g, '%2D');
+}
+
+// The Worker asks the model to cite as [Rulebook: …] or [Compendium: …];
+// parentheses are accepted too in case it drifts.
+const CITATION =
+  /\[(Rulebook|Compendium): ([^\]\n]{1,80})\]|\((Rulebook|Compendium): ([^)\n]{1,80})\)/g;
+
+/**
+ * Splits an answer into plain text and source links. The model only names a
+ * section; the URL always comes from this list, so it can't invent links.
+ * Compendium entries deep-link to their heading; the rulebook page is images,
+ * so rulebook citations open the page itself.
+ */
+export function linkCitations(text: string): AnswerSegment[] {
+  const segments: AnswerSegment[] = [];
+  let last = 0;
+  for (const match of text.matchAll(CITATION)) {
+    const [whole, bracketSource, bracketTitle, parenSource, parenTitle] = match;
+    const source = bracketSource ?? parenSource;
+    const title = (bracketTitle ?? parenTitle ?? '').trim();
+    const start = match.index ?? 0;
+    if (start > last) segments.push({ kind: 'text', text: text.slice(last, start) });
+    segments.push({
+      kind: 'link',
+      label: `${source}: ${title}`,
+      url: source === 'Compendium' ? `${ERRATA_URL}#:~:text=${textFragment(title)}` : RULEBOOK_URL,
+    });
+    last = start + whole.length;
+  }
+  if (last < text.length) segments.push({ kind: 'text', text: text.slice(last) });
+  return segments;
+}

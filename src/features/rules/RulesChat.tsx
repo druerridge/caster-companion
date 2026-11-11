@@ -19,6 +19,7 @@ import {
   MAX_QUESTION_CHARS,
   errorCopy,
   handoffUrl,
+  linkCitations,
   validateQuestion,
   type AskError,
   type HandoffProvider,
@@ -76,6 +77,15 @@ export function RulesChat() {
     );
   };
 
+  const openSource = (url: string, label: string) => {
+    Linking.openURL(url).catch(() => {
+      void dialog.alert({
+        title: "Couldn't open link",
+        message: `No app on this device could open ${label}.`,
+      });
+    });
+  };
+
   const handoff = (provider: HandoffProvider, name: string, question: string) => {
     Linking.openURL(handoffUrl(provider, question)).catch(() => {
       void dialog.alert({
@@ -96,10 +106,7 @@ export function RulesChat() {
         >
           {turns.length === 0 ? (
             <View style={styles.empty}>
-              <Text style={styles.text}>
-                Ask anything about MetaZoo rules. Answers come from the official rulebook and
-                errata.
-              </Text>
+              <Text style={styles.text}>Ask anything about MetaZoo rules.</Text>
               <Text style={styles.muted}>
                 Unofficial AI answers: check the rulebook when it matters. Questions are sent to
                 Google&apos;s Gemini.
@@ -118,7 +125,20 @@ export function RulesChat() {
                 )}
                 {turn.status === 'answer' && (
                   <Text style={styles.answer} selectable testID="ask-answer">
-                    {turn.text}
+                    {linkCitations(turn.text).map((segment, i) =>
+                      segment.kind === 'text' ? (
+                        segment.text
+                      ) : (
+                        <Text
+                          key={i}
+                          style={styles.link}
+                          accessibilityRole="link"
+                          onPress={() => openSource(segment.url, segment.label)}
+                        >
+                          {segment.label}
+                        </Text>
+                      ),
+                    )}
                   </Text>
                 )}
                 {turn.status === 'error' && (
@@ -215,6 +235,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   answer: { color: colors.text, fontSize: fontSizes.body, lineHeight: 24 },
+  link: { color: colors.accent, textDecorationLine: 'underline' },
   spinner: { alignSelf: 'flex-start' },
   errorTitle: {
     color: colors.danger,

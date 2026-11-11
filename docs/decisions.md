@@ -264,3 +264,17 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 **Why:** Owner's spec: asking a ruling should be the default on the Rules screen, ready to type.
 
 **Alternatives:** keep the separate Ask screen (an extra tap); `react-native-keyboard-controller` (new native dependency; not needed for one input).
+
+## D26 — Linked citations in ruling answers (amends D23, D25)
+*2026-11-10*
+
+**Decision:**
+- **Citations.** The Worker's prompt asks the model to cite each source as `[Rulebook: <heading>]` or `[Compendium: <entry>]`, using exact headings from the reference text, and never to write URLs. The app's `linkCitations` (`src/domain/rulings.ts`) turns each citation into an underlined link. It also accepts the older `(Rulebook: …)` form, which the pre-D26 Worker still produces until it's redeployed.
+- **Link targets.** URLs come only from the app, so the model can't invent links.
+  - A compendium citation opens the errata page with a Chrome text fragment (`#:~:text=<entry>`), which scrolls to and highlights the entry. The page has no per-entry anchors.
+  - A rulebook citation opens the rules web page, which is page images with no text to target.
+- **Intro text.** The empty-state intro is just "Ask anything about MetaZoo rules." Dropping "Answers come from the official rulebook and errata" removes the clash with the "unofficial AI answers" note below it.
+
+**Why:** Owner feedback on v0.9.1.
+
+**Alternatives:** letting the model write URLs (it can invent them); linking citations to the bundled PDF (not shipped in the app, and the PDF only downloads on Android).

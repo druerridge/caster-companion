@@ -5,15 +5,13 @@ import { KeyboardAvoidingView, StyleSheet, View } from 'react-native';
 import { useDialog } from '@/components/dialog/DialogProvider';
 import { TagButton } from '@/components/TagButton';
 import { ThemedBackground } from '@/components/ThemedBackground';
+import { RULEBOOK_URL } from '@/domain/rulings';
 import { RulesChat } from '@/features/rules/RulesChat';
 import { spacing } from '@/theme/tokens';
 
 /** The official "How to Play" YouTube playlist (feature 5, D21). */
 const HOW_TO_PLAY_URL =
   'https://www.youtube.com/watch?v=e1YFtKowesk&list=PLfzooD1xfFPBSr63yk_f3l-v8aPT4FxdY';
-
-/** The full rules as a web page (feature 6, D22; the PDF only downloads on Android). */
-const RULEBOOK_URL = 'https://www.metazootcg.com/how-to-play/rules/full';
 
 export default function RulesScreen() {
   const dialog = useDialog();

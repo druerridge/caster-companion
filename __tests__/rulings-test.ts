@@ -4,6 +4,7 @@ import {
   errorCopy,
   handoffPrompt,
   handoffUrl,
+  linkCitations,
   parseAskResponse,
   validateQuestion,
 } from '../src/domain/rulings';
@@ -86,5 +87,54 @@ describe('handoff', () => {
     expect(handoffUrl('claude', 'a & b')).toBe(
       'https://claude.ai/new?q=In%20MetaZoo%202025%2C%20a%20%26%20b',
     );
+  });
+});
+
+describe('linkCitations', () => {
+  it('turns cited sources into links to the official pages', () => {
+    expect(
+      linkCitations(
+        'Give is temporary. [Rulebook: Give/Gain/Have & Has/Deal] See also [Compendium: Replacement Effects].',
+      ),
+    ).toEqual([
+      { kind: 'text', text: 'Give is temporary. ' },
+      {
+        kind: 'link',
+        label: 'Rulebook: Give/Gain/Have & Has/Deal',
+        url: 'https://www.metazootcg.com/how-to-play/rules/full',
+      },
+      { kind: 'text', text: ' See also ' },
+      {
+        kind: 'link',
+        label: 'Compendium: Replacement Effects',
+        url: 'https://www.metazootcg.com/how-to-play/errata#:~:text=Replacement%20Effects',
+      },
+      { kind: 'text', text: '.' },
+    ]);
+  });
+
+  it('accepts parentheses and escapes fragment syntax', () => {
+    expect(linkCitations('[Compendium: Gigantic (X)] and (Rulebook: Lanes)')).toEqual([
+      {
+        kind: 'link',
+        label: 'Compendium: Gigantic (X)',
+        url: 'https://www.metazootcg.com/how-to-play/errata#:~:text=Gigantic%20(X)',
+      },
+      { kind: 'text', text: ' and ' },
+      {
+        kind: 'link',
+        label: 'Rulebook: Lanes',
+        url: 'https://www.metazootcg.com/how-to-play/rules/full',
+      },
+    ]);
+    expect(linkCitations('[Compendium: Jersey Devil, The Untamed-Hostile]')[0]).toMatchObject({
+      url: 'https://www.metazootcg.com/how-to-play/errata#:~:text=Jersey%20Devil%2C%20The%20Untamed%2DHostile',
+    });
+  });
+
+  it('leaves uncited text alone', () => {
+    expect(linkCitations('No sources here [Wiki: nope].')).toEqual([
+      { kind: 'text', text: 'No sources here [Wiki: nope].' },
+    ]);
   });
 });

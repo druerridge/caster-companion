@@ -89,6 +89,18 @@ describe('Rules screen question box', () => {
     expect(screen.getByText('First answer.')).toBeTruthy();
   });
 
+  it('links cited sources in the answer', async () => {
+    ask.mockResolvedValueOnce({
+      kind: 'answer',
+      text: 'Give is temporary. [Compendium: Influence]',
+    });
+    await askQuestion('give vs gain?');
+    await fireEvent.press(await screen.findByText('Compendium: Influence'));
+    expect(Linking.openURL).toHaveBeenCalledWith(
+      'https://www.metazootcg.com/how-to-play/errata#:~:text=Influence',
+    );
+  });
+
   it('does not send an empty question', async () => {
     await askQuestion('   ');
     expect(ask).not.toHaveBeenCalled();
