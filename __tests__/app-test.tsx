@@ -21,7 +21,7 @@ describe('app navigation', () => {
   });
 
   it.each([
-    ['Rules', '/rules', 'Errata and offline quick reference.'],
+    ['Rules', '/rules', /Ask anything about MetaZoo rules/],
     ['Cryptids', '/cryptids', 'Search cryptids by name or location.'],
   ])('switches to the %s tab', async (tab, path, text) => {
     await renderRouter('./src/app');

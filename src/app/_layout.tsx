@@ -18,7 +18,6 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="ask" options={{ title: 'Ask a Ruling' }} />
           <Stack.Screen name="about" options={{ title: 'About', presentation: 'modal' }} />
         </Stack>
       </DialogProvider>

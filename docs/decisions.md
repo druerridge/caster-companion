@@ -249,3 +249,18 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 **Decision:** The per-IP limit on the rules Worker goes from 5 to 12 questions a minute (`[[ratelimits]]` in `worker/wrangler.toml`). Gemini's free daily quota is still the hard ceiling.
 
 **Why:** Owner's request.
+
+## D25 — Rules screen is the ruling chat (amends D21, D22, D23)
+*2026-11-10*
+
+**Decision:**
+- **Layout.** The Rules tab is now its final layout. HOW TO PLAY and RULEBOOK sit side by side at the top. Below them, a card shows this session's questions and answers, newest at the bottom and auto-scrolled. A question box sits at the bottom of the screen with an ASK button.
+- **Gone.** The separate `/ask` screen and the "Errata and offline quick reference / Coming soon" placeholder.
+- **Focus.** The box shows a grey "Ask a rules question" placeholder. It takes focus, raising the keyboard, 150 ms after the tab gains focus; Android ignores focus() until the screen settles. It blurs when the tab loses focus, so the keyboard doesn't follow you to the tracker.
+- **Sending.** The keyboard's send key or ASK sends the question and clears the box. Only one question can be in flight at a time.
+- **History.** Kept in memory only, so it clears when the app restarts. Error turns keep their own ChatGPT/Claude handoff buttons.
+- **Keyboard.** Expo apps are edge-to-edge, so Android doesn't resize the window for the keyboard. The screen uses `KeyboardAvoidingView` with `behavior="padding"` on both platforms, offset by the header height, per the SDK 58 keyboard guide. The tab bar stays; Android's back button closes the keyboard.
+
+**Why:** Owner's spec: asking a ruling should be the default on the Rules screen, ready to type.
+
+**Alternatives:** keep the separate Ask screen (an extra tap); `react-native-keyboard-controller` (new native dependency; not needed for one input).
