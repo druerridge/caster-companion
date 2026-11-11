@@ -242,3 +242,10 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 - Gemini's terms allow only paid services for apps made available to users in the EEA (and, per the terms, Switzerland and the UK). That's fine for the owner and friends, but needs revisiting before a wide public release.
 
 **Alternatives:** chat-app handoff only (leaves the app; kept as the fallback); bring-your-own key or "Sign in with OpenRouter" (setup for each player); an on-device model (Gemini Nano only on flagships; small open models are large downloads and weak at rulings); embedding the key (breaks Google's terms).
+
+## D24 — Rules Worker rate limit raised to 12 a minute (amends D23)
+*2026-11-10*
+
+**Decision:** The per-IP limit on the rules Worker goes from 5 to 12 questions a minute (`[[ratelimits]]` in `worker/wrangler.toml`). Gemini's free daily quota is still the hard ceiling.
+
+**Why:** Owner's request.

@@ -13,11 +13,11 @@ KILL_SWITCH = "off"
 # Free-tier Gemini model. Check AI Studio's model list if it gets retired.
 GEMINI_MODEL = "gemini-3.5-flash-lite"
 
-# Per-IP limit: 5 questions a minute.
+# Per-IP limit: 12 questions a minute (D24).
 [[ratelimits]]
 name = "ASK_LIMITER"
 namespace_id = "1001"
 
   [ratelimits.simple]
-  limit = 5
+  limit = 12
   period = 60
