@@ -132,6 +132,30 @@ describe('linkCitations', () => {
     });
   });
 
+  it('deep-links official web page citations (D27)', () => {
+    expect(linkCitations('[Organized Play: Official Mulligan Policy]')).toEqual([
+      {
+        kind: 'link',
+        label: 'Organized Play: Official Mulligan Policy',
+        url: 'https://www.metazootcg.com/organized-play#:~:text=Official%20Mulligan%20Policy',
+      },
+    ]);
+    expect(linkCitations('(Dynamic Deck: 1.3 Minimum Deck Size)')[0]).toMatchObject({
+      url: 'https://www.metazootcg.com/how-to-play/rules/dynamic-deck#:~:text=1.3%20Minimum%20Deck%20Size',
+    });
+  });
+
+  it('turns [Search Google] into a search for the question (D27)', () => {
+    expect(linkCitations('Not covered. [Search Google]', 'how do mulligans work?')).toEqual([
+      { kind: 'text', text: 'Not covered. ' },
+      {
+        kind: 'link',
+        label: 'Search Google',
+        url: 'https://www.google.com/search?q=In%20MetaZoo%202025%2C%20how%20do%20mulligans%20work%3F',
+      },
+    ]);
+  });
+
   it('leaves uncited text alone', () => {
     expect(linkCitations('No sources here [Wiki: nope].')).toEqual([
       { kind: 'text', text: 'No sources here [Wiki: nope].' },

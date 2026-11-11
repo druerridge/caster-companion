@@ -1,4 +1,9 @@
-import { assembleGrounding, cleanPdfText, extractCompendium } from '../scripts/grounding';
+import {
+  assembleGrounding,
+  cleanPdfText,
+  extractCompendium,
+  extractPageSections,
+} from '../scripts/grounding';
 
 describe('cleanPdfText', () => {
   it('keeps rules prose and drops card-image debris', () => {
@@ -46,7 +51,45 @@ describe('extractCompendium', () => {
   });
 });
 
+describe('extractPageSections', () => {
+  it('splits <main> at h2/h3 headings and remembers the h2 group', () => {
+    const html = `<header><h2>Nav</h2><p>menu</p></header>
+      <main><h1>Organized Play</h1><script>x()</script>
+        <h2>How Tournaments Play</h2><p>Swiss.</p>
+        <h3 id="m">Official Mulligan Policy</h3><p>Bottom up to (2).</p>
+        <h3>Match Points</h3><table><tr><th>Result</th><th>Points</th></tr><tr><td>Win</td><td>3</td></tr></table>
+        <h2>Build a Local Community</h2><h3>Requirements</h3><p>A store.</p>
+      </main>`;
+    expect(extractPageSections(html)).toEqual([
+      { group: 'How Tournaments Play', title: 'How Tournaments Play', text: 'Swiss.' },
+      {
+        group: 'How Tournaments Play',
+        title: 'Official Mulligan Policy',
+        text: 'Bottom up to (2).',
+      },
+      { group: 'How Tournaments Play', title: 'Match Points', text: 'Result Points\nWin 3' },
+      { group: 'Build a Local Community', title: 'Requirements', text: 'A store.' },
+    ]);
+  });
+});
+
 describe('assembleGrounding', () => {
+  it('labels web pages with their citation form', () => {
+    const text = assembleGrounding({
+      fullRules: 'FULL',
+      quickPlay: 'QUICK',
+      compendium: [],
+      pages: [
+        {
+          label: 'Organized Play',
+          sections: [{ group: 'g', title: 'Official Mulligan Policy', text: 'Bottom.' }],
+        },
+      ],
+    });
+    expect(text).toContain('cite as [Organized Play: <heading>]');
+    expect(text).toContain('### Official Mulligan Policy\nBottom.');
+  });
+
   it('puts the compendium first and labels every source', () => {
     const text = assembleGrounding({
       fullRules: 'FULL',

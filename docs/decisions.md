@@ -278,3 +278,22 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 **Why:** Owner feedback on v0.9.1.
 
 **Alternatives:** letting the model write URLs (it can invent them); linking citations to the bundled PDF (not shipped in the app, and the PDF only downloads on Android).
+
+## D27 — Rules answers: official web pages, Google search fallback, per-minute limit (amends D23, D24, D26)
+*2026-11-10*
+
+**Decision:**
+- **More official text.** `npm run grounding` now also bundles two rules pages from metazootcg.com: Organized Play (only its "How Tournaments Play" section: structure, the mulligan policy, how you win, match points, Swiss and top cut) and Dynamic Deck rules. It's an allowlist (`PAGES` in `scripts/build-grounding.ts`), not a crawl, because most of the site isn't rules. The bundle grows by about 1.3k tokens, to roughly 16.8k.
+- **Citations.** The model cites these as `[Organized Play: <heading>]` and `[Dynamic Deck: <heading>]`. The app deep-links them with text fragments, like compendium entries. Labels and URLs live in `CITED_PAGES` (`src/domain/rulings.ts`).
+- **Google fallback.** When the reference text doesn't cover a question and the model can't make a reasonable reading, it says so and ends with `[Search Google]`. The app turns that into a link to a Google search for the player's question, prefixed "In MetaZoo 2025, " as for the chat-app handoff. The search opens in the browser. Questions the model can reasonably read still get an answer marked unofficial, with no link.
+- **Per-minute limit.** Gemini returns 429 for both its per-minute and daily free-tier limits. The Worker now reads the `QuotaFailure` quota IDs and returns `rate_limited` ("try again shortly") for a per-minute limit, keeping `quota` (chat-app handoff) for the daily one or when unsure.
+
+**Why:** Owner feedback. "How does the mulligan work?" got "the official rules do not include a mulligan", while Google's AI answer found the policy on the Organized Play page. The owner chose a Google search link over in-app search grounding.
+
+**Rate limits** (owner's AI Studio project, `gemini-3.5-flash-lite`, free tier): 15 requests a minute, 250k input tokens a minute, 500 requests a day, all shared by every user. One request measured 15.44k tokens before this change. At ~16.8k, the token limit allows about 14.9 questions a minute, so the effective ceiling stays at about 14–15. Bundling all card text (~40k more tokens) would cut it to about 4 a minute, so card text, if added, should be matched by card name per question.
+
+**Alternatives:**
+- Gemini's Google Search grounding: not on the free tier for Gemini 3.x. It's free only on 2.5 Flash/Flash-Lite (500 a day), and its terms require showing Google's Search Suggestions snippet unmodified.
+- Search only as a second request on a miss: more Worker logic, and it uses the same paid or old-model grounding.
+- URL context with a fixed list of up to 20 pages: still a whitelist, fetched live on every request.
+- Crawling the whole site: mostly cryptid, news and store pages.

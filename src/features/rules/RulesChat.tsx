@@ -125,7 +125,7 @@ export function RulesChat() {
                 )}
                 {turn.status === 'answer' && (
                   <Text style={styles.answer} selectable testID="ask-answer">
-                    {linkCitations(turn.text).map((segment, i) =>
+                    {linkCitations(turn.text, turn.question).map((segment, i) =>
                       segment.kind === 'text' ? (
                         segment.text
                       ) : (

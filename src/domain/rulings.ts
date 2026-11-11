@@ -20,7 +20,7 @@ export function validateQuestion(raw: unknown): QuestionCheck {
 export type WorkerError =
   | 'invalid' // bad request body or question
   | 'unauthorized' // missing/wrong app token
-  | 'rate_limited' // too many questions from this device in the last minute
+  | 'rate_limited' // too many questions in the last minute (this device, or everyone: D27)
   | 'quota' // Gemini's free daily quota is used up
   | 'disabled' // the owner switched the Worker off
   | 'blocked' // Gemini refused to answer
@@ -166,6 +166,23 @@ export const RULEBOOK_URL = 'https://www.metazootcg.com/how-to-play/rules/full';
 /** The official Errata & Compendium page. */
 export const ERRATA_URL = 'https://www.metazootcg.com/how-to-play/errata';
 
+/**
+ * Official web pages bundled into the Worker's reference text (D27), keyed by
+ * citation label. Must match PAGES in scripts/build-grounding.ts.
+ */
+export const CITED_PAGES: Record<string, string> = {
+  'Organized Play': 'https://www.metazootcg.com/organized-play',
+  'Dynamic Deck': 'https://www.metazootcg.com/how-to-play/rules/dynamic-deck',
+};
+
+/** What the model writes when the reference text can't answer (D27). */
+export const SEARCH_MARKER = '[Search Google]';
+
+/** A Google search for the question, phrased the way the owner asks it. */
+export function googleSearchUrl(question: string): string {
+  return `https://www.google.com/search?q=${encodeURIComponent(handoffPrompt(question))}`;
+}
+
 export type AnswerSegment =
   { kind: 'text'; text: string } | { kind: 'link'; label: string; url: string };
 
@@ -177,31 +194,46 @@ function textFragment(phrase: string): string {
   return encodeURIComponent(phrase).replace(/-/g, '%2D');
 }
 
-// The Worker asks the model to cite as [Rulebook: …] or [Compendium: …];
-// parentheses are accepted too in case it drifts.
-const CITATION =
-  /\[(Rulebook|Compendium): ([^\]\n]{1,80})\]|\((Rulebook|Compendium): ([^)\n]{1,80})\)/g;
+// The Worker asks the model to cite as [Rulebook: …], [Compendium: …] or
+// [<page label>: …]; parentheses are accepted too in case it drifts. It writes
+// [Search Google] when the reference text can't answer.
+const SOURCES = ['Rulebook', 'Compendium', ...Object.keys(CITED_PAGES)].join('|');
+const CITATION = new RegExp(
+  `\\[(${SOURCES}): ([^\\]\\n]{1,160})\\]|\\((${SOURCES}): ([^)\\n]{1,160})\\)|\\[Search Google\\]`,
+  'g',
+);
+
+function citationUrl(source: string, title: string): string {
+  if (source === 'Rulebook') return RULEBOOK_URL; // page images: no text to target
+  const page = source === 'Compendium' ? ERRATA_URL : (CITED_PAGES[source] ?? RULEBOOK_URL);
+  return `${page}#:~:text=${textFragment(title)}`;
+}
 
 /**
- * Splits an answer into plain text and source links. The model only names a
- * section; the URL always comes from this list, so it can't invent links.
- * Compendium entries deep-link to their heading; the rulebook page is images,
- * so rulebook citations open the page itself.
+ * Splits an answer into plain text and links. The model only names a section;
+ * the URL always comes from this file, so it can't invent links. Compendium and
+ * web-page citations deep-link to their heading; the rulebook page is images,
+ * so rulebook citations open the page itself. [Search Google] becomes a Google
+ * search for the player's question.
  */
-export function linkCitations(text: string): AnswerSegment[] {
+export function linkCitations(text: string, question = ''): AnswerSegment[] {
   const segments: AnswerSegment[] = [];
   let last = 0;
   for (const match of text.matchAll(CITATION)) {
     const [whole, bracketSource, bracketTitle, parenSource, parenTitle] = match;
-    const source = bracketSource ?? parenSource;
-    const title = (bracketTitle ?? parenTitle ?? '').trim();
     const start = match.index ?? 0;
     if (start > last) segments.push({ kind: 'text', text: text.slice(last, start) });
-    segments.push({
-      kind: 'link',
-      label: `${source}: ${title}`,
-      url: source === 'Compendium' ? `${ERRATA_URL}#:~:text=${textFragment(title)}` : RULEBOOK_URL,
-    });
+    if (whole === SEARCH_MARKER) {
+      segments.push({ kind: 'link', label: 'Search Google', url: googleSearchUrl(question) });
+    } else {
+      const source = bracketSource ?? parenSource ?? '';
+      const title = (bracketTitle ?? parenTitle ?? '').trim();
+      segments.push({
+        kind: 'link',
+        label: `${source}: ${title}`,
+        url: citationUrl(source, title),
+      });
+    }
     last = start + whole.length;
   }
   if (last < text.length) segments.push({ kind: 'text', text: text.slice(last) });

@@ -43,13 +43,14 @@ export interface AskDeps {
 
 export const SYSTEM_PROMPT = `You are a rules assistant for the MetaZoo trading card game (the 2025 relaunch by GameQbator Labs / MetaTwo). Players ask you ruling questions mid-game.
 
-Answer from the official reference text below. It contains the full rulebook, the quick play rules, and the official Errata & Compendium. The Errata & Compendium overrides the rulebooks where they disagree. The rulebook text was extracted from a PDF, so card images appear as scrambled fragments; ignore those.
+Answer from the official reference text below. It contains the full rulebook, the quick play rules, the official Errata & Compendium, and official web pages on Organized Play (tournament rules, including the mulligan policy) and Dynamic Deck play. The Errata & Compendium overrides the rulebooks where they disagree. The rulebook text was extracted from a PDF, so card images appear as scrambled fragments; ignore those.
 
 Rules for your answers:
 - Answer only questions about playing MetaZoo. Politely decline anything else.
 - Lead with a direct answer in one sentence, then explain briefly. Keep it under 150 words.
-- Cite each source you relied on in square brackets, using its exact heading from the reference text: [Rulebook: Give/Gain/Have & Has/Deal] or [Compendium: Replacement Effects]. Use "Rulebook" for both rulebooks and "Compendium" for Errata & Compendium entries. Never write URLs; the app turns citations into links.
-- If the reference text doesn't settle it, say so plainly and give your best reading, marked as unofficial.
+- Cite each source you relied on in square brackets, using its exact heading from the reference text: [Rulebook: Give/Gain/Have & Has/Deal], [Compendium: Replacement Effects], [Organized Play: Official Mulligan Policy] or [Dynamic Deck: 1.3 Minimum Deck Size]. Use "Rulebook" for both rulebooks. Never write URLs; the app turns citations into links.
+- If the reference text doesn't settle it but you can make a reasonable reading, give it and mark it as unofficial.
+- If the reference text doesn't cover it and you can't make a reasonable reading, say so in one sentence and end your answer with exactly [Search Google]. The app turns that into a Google search for the question. Never guess at a rule just to avoid this.
 - Plain text only: no Markdown, no headings, no bold. Short dashes for lists are fine.`;
 
 function reply(status: number, body: AskReply['body']): AskReply {
@@ -67,9 +68,28 @@ export function buildGeminiRequest(question: string, grounding: string) {
   };
 }
 
+/**
+ * Gemini answers 429 for both its per-minute and daily free-tier limits. The
+ * QuotaFailure detail names the quota, e.g.
+ * "GenerateRequestsPerMinutePerProjectPerModel-FreeTier". Only a per-minute
+ * limit (with no daily one) is worth retrying shortly (D27).
+ */
+export function isPerMinuteLimit(json: unknown): boolean {
+  const details = (json as { error?: { details?: unknown } })?.error?.details;
+  if (!Array.isArray(details)) return false;
+  const ids = details.flatMap((d: { violations?: { quotaId?: unknown }[] }) =>
+    (Array.isArray(d?.violations) ? d.violations : []).map((v) => String(v?.quotaId ?? '')),
+  );
+  return ids.some((id) => /PerMinute/i.test(id)) && !ids.some((id) => /PerDay/i.test(id));
+}
+
 /** Maps a Gemini HTTP status + JSON body to our reply. */
 export function readGeminiReply(status: number, json: unknown): AskReply {
-  if (status === 429) return reply(503, { error: 'quota' });
+  if (status === 429) {
+    return isPerMinuteLimit(json)
+      ? reply(429, { error: 'rate_limited' })
+      : reply(503, { error: 'quota' });
+  }
   if (status < 200 || status >= 300) return reply(502, { error: 'upstream' });
 
   const data = json as {

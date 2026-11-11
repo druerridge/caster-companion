@@ -61,7 +61,8 @@ function decodeEntities(text: string): string {
 function stripTags(html: string): string {
   return decodeEntities(
     html
-      .replace(/<\/(p|li|div)>/gi, '\n')
+      .replace(/<\/(p|li|div|tr|section|h\d)>/gi, '\n')
+      .replace(/<\/t[dh]>/gi, ' ')
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/<[^>]+>/g, ''),
   )
@@ -92,18 +93,64 @@ export function extractCompendium(html: string): CompendiumEntry[] {
   return entries;
 }
 
+export interface PageSection {
+  /** The enclosing <h2>, or '' before the first one. */
+  group: string;
+  /** The section's <h3> heading (or <h2>, when it has text of its own). */
+  title: string;
+  text: string;
+}
+
+/**
+ * Splits a metazootcg.com page's <main> into sections at each <h2>/<h3>, so
+ * the model can cite a heading and the app can deep-link to it (D27).
+ */
+export function extractPageSections(html: string): PageSection[] {
+  const main = /<main\b[^>]*>([\s\S]*?)<\/main>/i.exec(html)?.[1] ?? html;
+  const body = main.replace(/<(script|style|svg)\b[\s\S]*?<\/\1>/gi, '');
+  const parts = body.split(/(<h[23]\b[^>]*>[\s\S]*?<\/h[23]>)/i);
+  const sections: PageSection[] = [];
+  let group = '';
+  for (let i = 1; i < parts.length; i += 2) {
+    const tag = parts[i] ?? '';
+    const title = stripTags(tag).replace(/\n/g, ' ');
+    const text = stripTags(parts[i + 1] ?? '');
+    if (/^<h2/i.test(tag)) group = title;
+    if (title && text) sections.push({ group, title, text });
+  }
+  return sections;
+}
+
+/** An official web page bundled into the reference text (D27). */
+export interface WebPage {
+  /** The citation label the model uses, e.g. "Organized Play". */
+  label: string;
+  sections: PageSection[];
+}
+
 export interface GroundingSources {
   fullRules: string;
   quickPlay: string;
   compendium: CompendiumEntry[];
+  pages?: WebPage[];
 }
 
 /** The single text block the Worker sends to the model with every question. */
-export function assembleGrounding({ fullRules, quickPlay, compendium }: GroundingSources): string {
+export function assembleGrounding({
+  fullRules,
+  quickPlay,
+  compendium,
+  pages = [],
+}: GroundingSources): string {
   const entries = compendium.map(({ title, text }) => `### ${title}\n${text}`).join('\n\n');
+  const pageBlocks = pages.flatMap(({ label, sections }) => [
+    `## ${label.toUpperCase()} (official web page; cite as [${label}: <heading>])`,
+    sections.map(({ title, text }) => `### ${title}\n${text}`).join('\n\n'),
+  ]);
   return [
     '## OFFICIAL ERRATA & COMPENDIUM (overrides the rulebooks)',
     entries,
+    ...pageBlocks,
     '## FULL RULEBOOK (base set)',
     fullRules,
     '## QUICK PLAY RULES',

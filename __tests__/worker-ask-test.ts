@@ -124,6 +124,39 @@ describe('readGeminiReply', () => {
     expect(readGeminiReply(200, null).body).toEqual({ error: 'upstream' });
   });
 
+  it("tells Gemini's per-minute limit apart from the daily one (D27)", () => {
+    const limited = (...quotaIds: string[]) => ({
+      error: {
+        code: 429,
+        details: [
+          {
+            '@type': 'type.googleapis.com/google.rpc.QuotaFailure',
+            violations: quotaIds.map((quotaId) => ({ quotaId })),
+          },
+          { '@type': 'type.googleapis.com/google.rpc.RetryInfo', retryDelay: '14s' },
+        ],
+      },
+    });
+    expect(
+      readGeminiReply(429, limited('GenerateRequestsPerMinutePerProjectPerModel-FreeTier')),
+    ).toEqual({ status: 429, body: { error: 'rate_limited' } });
+    expect(
+      readGeminiReply(429, limited('GenerateContentInputTokensPerModelPerMinute-FreeTier')).body,
+    ).toEqual({ error: 'rate_limited' });
+    expect(
+      readGeminiReply(429, limited('GenerateRequestsPerDayPerProjectPerModel-FreeTier')).body,
+    ).toEqual({ error: 'quota' });
+    expect(
+      readGeminiReply(
+        429,
+        limited(
+          'GenerateRequestsPerMinutePerProjectPerModel-FreeTier',
+          'GenerateRequestsPerDayPerProjectPerModel-FreeTier',
+        ),
+      ).body,
+    ).toEqual({ error: 'quota' });
+  });
+
   it('joins multi-part answers', () => {
     const json = {
       candidates: [{ content: { parts: [{ text: 'Give ' }, { text: 'is temporary.' }] } }],
