@@ -1,5 +1,5 @@
 import * as Linking from 'expo-linking';
-import { useHeaderHeight } from 'expo-router/react-navigation';
+import { useState } from 'react';
 import { KeyboardAvoidingView, StyleSheet, View } from 'react-native';
 
 import { useDialog } from '@/components/dialog/DialogProvider';
@@ -7,6 +7,7 @@ import { TagButton } from '@/components/TagButton';
 import { ThemedBackground } from '@/components/ThemedBackground';
 import { RULEBOOK_URL } from '@/domain/rulings';
 import { RulesChat } from '@/features/rules/RulesChat';
+import { ScoreBanner } from '@/features/tracker/ScoreBanner';
 import { spacing } from '@/theme/tokens';
 
 /** The official "How to Play" YouTube playlist (feature 5, D21). */
@@ -15,7 +16,8 @@ const HOW_TO_PLAY_URL =
 
 export default function RulesScreen() {
   const dialog = useDialog();
-  const headerHeight = useHeaderHeight();
+  // Distance from the window top to the keyboard-avoiding area (below the banner).
+  const [top, setTop] = useState(0);
 
   // Hands the URL to Android: YouTube links go to the YouTube app if installed,
   // everything else to the browser. Tells the user if nothing can open it.
@@ -30,10 +32,12 @@ export default function RulesScreen() {
 
   return (
     <ThemedBackground>
+      <ScoreBanner />
       {/* Expo apps are edge-to-edge, so Android doesn't resize for the keyboard; pad instead. */}
       <KeyboardAvoidingView
         behavior="padding"
-        keyboardVerticalOffset={headerHeight}
+        keyboardVerticalOffset={top}
+        onLayout={(e) => setTop(e.nativeEvent.layout.y)}
         style={styles.screen}
       >
         <View style={styles.links}>

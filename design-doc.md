@@ -50,10 +50,14 @@ A small, subtle timer (e.g. 05:41) to track how much time has elapsed since the 
 6. *Quick Rulebook - if it's not possible to do the LLM-based one, at least having quick, offline (cached?) access to the rulebook (available via PDF), errata page, and other key info to search would be perfect.
 
 7. **Rules Lookup - If it's possible, hit a free/open LLM to ask ruling questions.  I've had tremendous luck just typing in questions like "In MetaZoo 2025, when I do X with Y, what happens?" or "In MetaZoo 2025, what does give +2 influence mean? vs gain +2 influence?"
+* The first time the app is opened and you switch to the rules page, it should not have the keyboard out.  However, after the first time you open the keyboard to ask a rules question, all subsequent times when you open the rules page, it should always have the keyboard already up. 
+* I like the layout as it is, but the previous question(s) in blue are not selectable. I'd like them to be selectable because it's common that I need to ask a similar question but change the wording slightly, so I'd like to be able to copy-paste-edit then send a slightly modified or fixed question.
+
+8. * Score during rules lookup - if you are tabbed over to the rules lookup section, it'd be good if you could still see the score if there is one active, perhaps in a little banner across the top.
 
 ### Cryptid Search
 
-8. **A screen where you can search by cryptid name or location and turn up cryptids using the same data that is visualized on the metazootcg.com website
+9. **A screen where you can search by cryptid name or location and turn up cryptids using the same data that is visualized on the metazootcg.com website
 
 * Single Stretch Goal
 ** Double Stretch Goal

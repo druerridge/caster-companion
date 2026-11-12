@@ -18,7 +18,7 @@ GEMINI_MODEL = "gemini-3.5-flash-lite"
 # and paste the printed id here. Fill it with `npm run cards:seed -- --remote`.
 [[kv_namespaces]]
 binding = "CARDS"
-id = "REPLACE_WITH_CARDS_NAMESPACE_ID"
+id = "ad01510d112b4502a65e766fd109399d"
 
 # Every 15 minutes, add up to 2 new cards from the sitemap (D29).
 [triggers]

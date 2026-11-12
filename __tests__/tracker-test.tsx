@@ -5,7 +5,12 @@ import { Animated, AppState, type AppStateStatus } from 'react-native';
 
 import { STALE_AFTER_MS } from '@/domain/session';
 import { CHANGE_BURST_MS, CHANGE_FADE_MS, CHANGE_HOLD_MS } from '@/features/tracker/timing';
-import { GAME_KEY, LAST_ACTIVE_KEY, LEGACY_MISSION_POINTS_KEY } from '@/features/tracker/useGame';
+import {
+  GAME_KEY,
+  HEARTBEAT_MS,
+  LAST_ACTIVE_KEY,
+  LEGACY_MISSION_POINTS_KEY,
+} from '@/features/tracker/useGame';
 import { colors } from '@/theme/tokens';
 
 // Keep the coin reveal short so tests stay fast with real timers.
@@ -445,7 +450,7 @@ describe('stale games', () => {
     expect(await screen.findByTestId('start-chooser')).toBeTruthy();
   });
 
-  it('applies the same rule when returning from the background', async () => {
+  it('never resets while the app is open, even after a long time in the background', async () => {
     // renderRouter installs fake timers, so the clock is driven with setSystemTime.
     const advance = (ms: number) => jest.setSystemTime(Date.now() + ms);
     // The React Native jest preset mocks AppState; replay its registered listeners.
@@ -460,14 +465,26 @@ describe('stale games', () => {
     await screen.findByTestId('middle-band');
 
     await emit('background');
-    advance(STALE_AFTER_MS);
+    advance(STALE_AFTER_MS * 4);
     await emit('active');
     expect(score('bottom')).toHaveTextContent('5');
+    expect(screen.queryByTestId('start-chooser')).toBeNull();
+  });
 
-    await emit('background');
-    advance(STALE_AFTER_MS + 1);
-    await emit('active');
-    expect(await screen.findByTestId('start-chooser')).toBeTruthy();
+  it('records activity while open, so a later cold start measures from then', async () => {
+    await GAME_STATE(SAVED);
+    await renderTracker();
+    await screen.findByTestId('middle-band');
+    const before = JSON.parse((await AsyncStorage.getItem(LAST_ACTIVE_KEY.key)) ?? 'null');
+
+    await act(async () => {
+      jest.setSystemTime(Date.now() + HEARTBEAT_MS);
+      jest.advanceTimersByTime(HEARTBEAT_MS);
+    });
+    await waitFor(async () => {
+      const after = JSON.parse((await AsyncStorage.getItem(LAST_ACTIVE_KEY.key)) ?? 'null');
+      expect(after).toBeGreaterThanOrEqual(before + HEARTBEAT_MS);
+    });
   });
 });
 

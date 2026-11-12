@@ -44,18 +44,20 @@ async function loadGame(): Promise<GameState> {
   return legacyPoints ? { ...NEW_GAME, points: legacyPoints } : NEW_GAME;
 }
 
+/** How often the app records that it's still open, so an idle app that's killed isn't judged stale. */
+export const HEARTBEAT_MS = 60 * 1000;
+
 /**
  * Game state that survives the app being killed. `hydrated` is false until
  * saved state has loaded, so the UI doesn't flash a "new game" screen first.
- * A game left closed (killed or in the background) for over 15 minutes
- * starts fresh.
+ * A game never resets while the app is open (even backgrounded); only a cold
+ * start more than 15 minutes after the app was last active starts fresh.
  */
 export function useGame() {
   const [state, setState] = useState<GameState>(NEW_GAME);
   const [hydrated, setHydrated] = useState(false);
   // Don't let a slow initial load clobber actions taken before it finished.
   const touched = useRef(false);
-  const backgroundedAt = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,25 +72,17 @@ export function useGame() {
     };
   }, []);
 
-  // The app may be backgrounded rather than killed; apply the same rule on return.
+  // Record activity when leaving and returning to the foreground, and
+  // periodically while open, so the next cold start measures from then.
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (next) => {
-      const now = Date.now();
-      if (next === 'background') {
-        backgroundedAt.current = now;
-      } else if (next === 'active') {
-        if (isStale(backgroundedAt.current, now)) {
-          touched.current = true;
-          setState(NEW_GAME);
-          void save(GAME_KEY, NEW_GAME);
-        }
-        backgroundedAt.current = null;
-      } else {
-        return;
-      }
-      markActive(now);
+      if (next === 'background' || next === 'active') markActive();
     });
-    return () => subscription.remove();
+    const heartbeat = setInterval(() => markActive(), HEARTBEAT_MS);
+    return () => {
+      subscription.remove();
+      clearInterval(heartbeat);
+    };
   }, []);
 
   const dispatch = useCallback((action: GameAction) => {

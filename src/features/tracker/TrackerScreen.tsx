@@ -12,11 +12,11 @@ import type { Side } from '@/domain/missionPoints';
 import { spacing } from '@/theme/tokens';
 
 import { GameClock } from './GameClock';
+import { useGameContext } from './GameProvider';
 import { PlayerHalf } from './PlayerHalf';
 import { RoundDisplay } from './RoundDisplay';
 import { SideDrawer } from './SideDrawer';
 import { StartChooser } from './StartChooser';
-import { useGame } from './useGame';
 
 const KEEP_AWAKE_TAG = 'tracker';
 const RESTART_ART = require('../../../assets/images/btn-restart.png');
@@ -34,7 +34,7 @@ function useKeepAwakeWhileFocused() {
 }
 
 export function TrackerScreen() {
-  const { state, hydrated, dispatch } = useGame();
+  const { state, hydrated, dispatch } = useGameContext();
   useKeepAwakeWhileFocused();
 
   const { confirm } = useDialog();

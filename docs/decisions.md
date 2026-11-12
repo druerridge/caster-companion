@@ -334,3 +334,32 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 - Bundling card text at build time: stale on every release, and all 721 cards (~40k tokens) per request would cut the ceiling to ~4 questions a minute.
 - Calling `/cards?q=` per question: many subrequests per question with no fuzzy matching.
 - Third-party card databases: none cover the 2025 sets.
+
+## D30 — Score banner on the other tabs; games never reset while open (feature 8; amends D16)
+*2026-11-11*
+
+**Decision:**
+- **Banner.** When a game is in progress (a starter has been picked), the Rules and Cryptids tabs show a slim strip at the top: `TOP 12 · BOTTOM 7 · R3`. The chip of the player with priority has the moon-lime frame, and a chip at 30+ uses the magenta goal fill, as on the tracker. It updates live. It isn't shown on the tracker, which already shows the score, or on the About modal.
+- **Tap and close.** Tapping the strip opens the tracker. × hides it for the current game (identified by its start time); the next game brings it back. Closing isn't persisted.
+- **Shared state.** `GameProvider` (`src/features/tracker/GameProvider.tsx`) wraps the tab navigator and owns the one `useGame()` instance, so the tracker and the banner read the same state.
+- **Stale rule (amends D16).** A game never resets while the app is open, however long it sits in the background. The 15-minute rule applies only at a cold start, measured from when the app was last active. `tracker.lastActiveAt.v1` is still written on launch, on every action and on background/foreground changes, and now also once a minute while the app runs, so an app left idle and then killed isn't judged by an old timestamp.
+
+**Why:** Design-doc feature 8, which the owner extended to the whole app with a close button. The owner corrected the stale rule: only an app that has been closed for over 15 minutes should start fresh.
+
+**Alternatives:**
+- A custom navigator header containing the banner: it changes `useHeaderHeight`, which the Rules screen's keyboard offset depends on, and means re-implementing the default header.
+- A banner above the navigator: it would sit in the status-bar area, above each tab's header.
+- Persisting the closed state: a closed banner would survive a cold start for no clear benefit.
+
+## D31 — No tab headers; the score banner is a full-width top bar (amends D30)
+*2026-11-11*
+
+**Decision:**
+- **Headers removed.** The Rules and Cryptids tabs no longer have a navigation header. The tab bar already names the screen, and this frees ~56 dp of height for the chat.
+- **Banner.** While a game is in progress, the banner spans the full width at the top edge and runs up under the status bar. It's a solid indigo strip (`colors.surface`, like the tab bar) with an ink keyline and a shadow along the bottom. The score chips and `ROUND n` are on the left, and the × sits in its own divided cell on the right. Without a game, `ScoreBanner` only reserves the status-bar inset.
+- **Keyboard.** The Rules screen's `KeyboardAvoidingView` offset is now its measured distance from the window top (below the banner), replacing the header height.
+- **About.** The ⓘ button lived in the header. It moves to an "ⓘ About this app" link at the bottom of the Cryptids placeholder card, until feature 9 needs that space. It isn't on the Rules screen, where vertical space is tightest (owner).
+
+**Why:** Owner feedback on v0.9.6: the banner didn't read as a banner, and the headers took up vertical space.
+
+**Alternatives for About:** a link in the Rules chat's empty state (tried in a v0.9.7 build; the owner wanted that space back); a third button in the Rules link row would wrap "HOW TO PLAY" onto two lines on 360 dp phones (D28). The tracker's drawer exists only during a game. A floating corner button would collide with the banner's ×.

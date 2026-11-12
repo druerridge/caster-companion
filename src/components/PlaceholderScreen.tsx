@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { CardFrame } from '@/components/CardFrame';
@@ -8,15 +9,27 @@ interface PlaceholderScreenProps {
   title: string;
   aura: Aura;
   description: string;
+  /** Shown above the card, e.g. the score banner. */
+  top?: ReactNode;
+  /** Extra content at the end of the card. */
+  children?: ReactNode;
 }
 
-export function PlaceholderScreen({ title, aura, description }: PlaceholderScreenProps) {
+export function PlaceholderScreen({
+  title,
+  aura,
+  description,
+  top,
+  children,
+}: PlaceholderScreenProps) {
   return (
     <ThemedBackground>
+      {top}
       <View style={styles.screen}>
         <CardFrame title={title} aura={aura} style={styles.frame}>
           <Text style={styles.text}>{description}</Text>
           <Text style={styles.muted}>Coming soon.</Text>
+          {children}
         </CardFrame>
       </View>
     </ThemedBackground>

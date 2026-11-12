@@ -32,7 +32,7 @@ describe('app navigation', () => {
 
   it('opens the About screen with the unofficial disclaimer', async () => {
     await renderRouter('./src/app');
-    await pressTab('Rules'); // the Tracker tab is full-bleed, without a header
+    await pressTab('Cryptids'); // About is linked from the Cryptids placeholder (D31)
     await fireEvent.press(await screen.findByLabelText('About'));
     expect(screen).toHavePathname('/about');
     expect(await screen.findByText(/Not affiliated with/)).toBeTruthy();
