@@ -357,7 +357,7 @@ Numbered, append-only. To change a decision, add a new entry that supersedes the
 **Decision:**
 - **Headers removed.** The Rules and Cryptids tabs no longer have a navigation header. The tab bar already names the screen, and this frees ~56 dp of height for the chat.
 - **Banner.** While a game is in progress, the banner spans the full width at the top edge and runs up under the status bar. It's a solid indigo strip (`colors.surface`, like the tab bar) with an ink keyline and a shadow along the bottom. The score chips and `ROUND n` are on the left, and the × sits in its own divided cell on the right. Without a game, `ScoreBanner` only reserves the status-bar inset.
-- **Keyboard.** The Rules screen's `KeyboardAvoidingView` offset is now its measured distance from the window top (below the banner), replacing the header height.
+- **Keyboard.** The Rules screen's `KeyboardAvoidingView` now has no vertical offset. It computes its padding from its own layout `y`, which is measured from its parent. With a header, the parent started below the header, so the header height had to be added. Now the parent starts at the window top, and `y` already includes the banner. An offset equal to the banner height, as in v0.9.6–0.9.8, counted it twice and left the input about 120 dp above the keyboard on a Pixel 10.
 - **About.** The ⓘ button lived in the header. It moves to an "ⓘ About this app" link at the bottom of the Cryptids placeholder card, until feature 9 needs that space. It isn't on the Rules screen, where vertical space is tightest (owner).
 
 **Why:** Owner feedback on v0.9.6: the banner didn't read as a banner, and the headers took up vertical space.
